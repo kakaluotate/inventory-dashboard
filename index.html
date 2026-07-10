@@ -39,6 +39,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .topbar .sync-btn:active{background:rgba(255,255,255,0.3);}
 .content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 90px 12px;}
 .content::-webkit-scrollbar{width:0;}
+/* 日期筛选条 */
+.date-filter-bar{display:flex;gap:4px;padding:6px 0 8px;flex-wrap:wrap;align-items:center;}
+.date-filter-bar .df-tab{padding:5px 10px;border-radius:14px;font-size:12px;background:rgba(255,255,255,0.08);color:var(--text-light);cursor:pointer;border:1px solid var(--border);transition:all 0.2s;}
+.date-filter-bar .df-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.date-filter-bar .df-custom{width:90px;padding:4px 8px;border-radius:14px;font-size:12px;border:1px solid var(--border);background:#fff;color:var(--text);}
+/* 月份折叠 */
+.month-group{margin-bottom:8px;}
+.month-group-head{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(26,26,46,0.06);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);margin-bottom:4px;user-select:none;}
+.month-group-head .mg-arrow{font-size:14px;color:var(--text-light);transition:transform 0.2s;}
+.month-group-head .mg-arrow.collapsed{transform:rotate(-90deg);}
+.month-group-head .mg-count{font-size:12px;color:var(--text-light);font-weight:400;}
+.month-group-body{transition:all 0.2s;}
 .bottom-nav{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);z-index:20;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
 .nav-item{flex:1;text-align:center;padding:7px 0 5px;cursor:pointer;color:var(--text-lighter);transition:color 0.2s;}
 .nav-item.active{color:var(--primary);}
@@ -383,6 +395,11 @@ function parseOrderId(orderId){
   // 无日期序号的纯关键词
   return {keyword:orderId,date:'',seq:0,group:'',label:orderId};
 }
+function dateOffset(dateStr, days){
+  const d=new Date(dateStr);
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 // 按出库单号分组
 function getOutboundOrders(){
   const groups={};
@@ -471,7 +488,20 @@ function switchTab(tab){
 
 // ====================== 看板页 ======================
 let showAllOrders=false;
+let dashDateFilter='all'; // 'all','today','yesterday','7d','30d','custom'
+let dashCustomDate='';
+let dashExpandedMonths={}; // 记录哪些月份展开
 function toggleAllOrders(){ showAllOrders=!showAllOrders; renderDashboard(); }
+function setDashDateFilter(f,customDate){
+  dashDateFilter=f;
+  if(f==='custom' && customDate) dashCustomDate=customDate;
+  else dashCustomDate='';
+  renderDashboard();
+}
+function toggleMonthExpand(monthKey){
+  dashExpandedMonths[monthKey]=!dashExpandedMonths[monthKey];
+  renderDashboard();
+}
 function renderDashboard(){
   const warehouses=getWarehouses();
   const combined=getStockCombined();
@@ -515,32 +545,118 @@ function renderDashboard(){
   html+='<div class="legend"><span><span class="lg-dot" style="background:var(--blue)"></span>万纬仓</span><span><span class="lg-dot" style="background:var(--red)"></span>翰溥仓</span></div>';
   html+='</div>';
 
-  // 近期入库
-  const inboundBatches=state.stock_batches.filter(b=>b.batch_type==='inbound').sort((a,b)=>b.created_at.localeCompare(a.created_at));
-  const ibCount=inboundBatches.length;
-  html+='<div class="card"><h3>入库记录 <span class="sub">'+ibCount+' 笔</span></h3>';
-  if(ibCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">暂无入库记录</div></div>'; }
-  else{
-    const recent=inboundBatches.slice(0,10);
-    for(const b of recent){ html+=renderInboundItem(b); }
-    if(ibCount>10) html+='<div style="text-align:center;font-size:12px;color:var(--text-lighter);margin-top:4px">还有 '+((ibCount-10))+' 笔</div>';
+  // 近期入库（带日期筛选+月份折叠）
+  const allInboundBatches=state.stock_batches.filter(b=>b.batch_type==='inbound').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  // 日期筛选
+  let filteredInbound=allInboundBatches;
+  const today=todayStr();
+  const yesterday=dateOffset(today,-1);
+  const d7=dateOffset(today,-6);
+  const d30=dateOffset(today,-29);
+  if(dashDateFilter==='today') filteredInbound=allInboundBatches.filter(b=>b.batch_date===today);
+  else if(dashDateFilter==='yesterday') filteredInbound=allInboundBatches.filter(b=>b.batch_date===yesterday);
+  else if(dashDateFilter==='7d') filteredInbound=allInboundBatches.filter(b=>b.batch_date>=d7 && b.batch_date<=today);
+  else if(dashDateFilter==='30d') filteredInbound=allInboundBatches.filter(b=>b.batch_date>=d30 && b.batch_date<=today);
+  else if(dashDateFilter==='custom' && dashCustomDate) filteredInbound=allInboundBatches.filter(b=>b.batch_date===dashCustomDate);
+  const ibCount=filteredInbound.length;
+  html+='<div class="card"><h3>入库记录 <span class="sub">'+ibCount+' 笔'+(dashDateFilter!=='all'?' (筛选中)':'')+'</span></h3>';
+  // 日期筛选条
+  html+='<div class="date-filter-bar">';
+  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter('all')">全部</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter('today')">今天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter('yesterday')">昨天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter('7d')">近7天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter('30d')">近30天</span>';
+  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter('custom',this.value)">';
+  html+='</div>';
+  if(ibCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">'+(dashDateFilter!=='all'?'该筛选范围无入库记录':'暂无入库记录')+'</div></div>'; }
+  else if(filteredInbound.length<=12 || dashDateFilter!=='all'){
+    // 数量少或有筛选时直接全显示
+    for(const b of filteredInbound){ html+=renderInboundItem(b); }
+  } else {
+    // 数量多且无筛选时按月份折叠
+    const monthGroups={};
+    for(const b of filteredInbound){
+      const mk=b.batch_date.substring(0,7); // YYYY-MM
+      if(!monthGroups[mk]) monthGroups[mk]={key:mk,items:[],total:0};
+      monthGroups[mk].items.push(b);
+      monthGroups[mk].total+=b.quantity;
+    }
+    const monthKeys=Object.keys(monthGroups).sort().reverse(); // 月份降序
+    const currentMonth=today.substring(0,7);
+    for(const mk of monthKeys){
+      const mg=monthGroups[mk];
+      const isCurrent=mk===currentMonth;
+      const expanded=dashExpandedMonths[mk]!==false; // 默认展开（只有手动点收起才为false）
+      html+='<div class="month-group">';
+      html+='<div class="month-group-head" onclick="toggleMonthExpand(''+mk+'')">';
+      const dm=mk.split('-');
+      html+='<span>'+parseInt(dm[1])+'月入库 '+fmt(mg.total)+' 件</span>';
+      html+='<span class="mg-count">'+mg.items.length+' 笔</span>';
+      html+='<span class="mg-arrow '+((expanded)?'':'collapsed')+'">▼</span>';
+      html+='</div>';
+      if(expanded){
+        html+='<div class="month-group-body">';
+        for(const b of mg.items){ html+=renderInboundItem(b); }
+        html+='</div>';
+      }
+      html+='</div>';
+    }
   }
   html+='</div>';
 
-  // 近期出库（按出库单分组展示）
-  const orders=getOutboundOrders();
-  const orderCount=orders.length;
-  html+='<div class="card"><h3>出库记录 <span class="sub">'+obCount+' 笔 / '+orderCount+' 单</span></h3>';
-  if(obCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">暂无出库记录</div></div>'; }
-  else{
-    const displayOrders = showAllOrders ? orders : orders.slice(0,5);
-    for(const o of displayOrders){ html+=renderOutboundOrderCard(o); }
-    if(orderCount>5){
-      if(showAllOrders){
-        html+='<div style="text-align:center;margin-top:8px"><span class="filter-tab" style="display:inline-block;min-width:auto" onclick="toggleAllOrders()">收起</span></div>';
-      } else {
-        html+='<div style="text-align:center;margin-top:8px"><span class="filter-tab" style="display:inline-block;min-width:auto" onclick="toggleAllOrders()">展开全部 '+orderCount+' 单</span></div>';
+  // 近期出库（带日期筛选+月份折叠）
+  const allOrders=getOutboundOrders();
+  let filteredOrders=allOrders;
+  if(dashDateFilter==='today') filteredOrders=allOrders.filter(o=>o.date===today);
+  else if(dashDateFilter==='yesterday') filteredOrders=allOrders.filter(o=>o.date===yesterday);
+  else if(dashDateFilter==='7d') filteredOrders=allOrders.filter(o=>o.date>=d7 && o.date<=today);
+  else if(dashDateFilter==='30d') filteredOrders=allOrders.filter(o=>o.date>=d30 && o.date<=today);
+  else if(dashDateFilter==='custom' && dashCustomDate) filteredOrders=allOrders.filter(o=>o.date===dashCustomDate);
+  const filteredObCount=filteredOrders.reduce((s,o)=>s+o.records.length,0);
+  const orderCount=filteredOrders.length;
+  html+='<div class="card"><h3>出库记录 <span class="sub">'+filteredObCount+' 笔 / '+orderCount+' 单'+(dashDateFilter!=='all'?' (筛选中)':'')+'</span></h3>';
+  // 日期筛选条（与入库共享筛选状态）
+  html+='<div class="date-filter-bar">';
+  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter('all')">全部</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter('today')">今天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter('yesterday')">昨天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter('7d')">近7天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter('30d')">近30天</span>';
+  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter('custom',this.value)">';
+  html+='</div>';
+  if(filteredObCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">'+(dashDateFilter!=='all'?'该筛选范围无出库记录':'暂无出库记录')+'</div></div>'; }
+  else if(filteredOrders.length<=5 || dashDateFilter!=='all'){
+    // 数量少或有筛选时直接全显示
+    for(const o of filteredOrders){ html+=renderOutboundOrderCard(o); }
+  } else {
+    // 数量多且无筛选时按月份折叠
+    const monthGroups={};
+    for(const o of filteredOrders){
+      const mk=o.date.substring(0,7); // YYYY-MM
+      if(!monthGroups[mk]) monthGroups[mk]={key:mk,items:[],total:0,count:0};
+      monthGroups[mk].items.push(o);
+      monthGroups[mk].total+=o.total;
+      monthGroups[mk].count+=1;
+    }
+    const monthKeys=Object.keys(monthGroups).sort().reverse();
+    const currentMonth=today.substring(0,7);
+    for(const mk of monthKeys){
+      const mg=monthGroups[mk];
+      const expanded=dashExpandedMonths[mk]!==false;
+      html+='<div class="month-group">';
+      html+='<div class="month-group-head" onclick="toggleMonthExpand(''+mk+'')">';
+      const dm=mk.split('-');
+      html+='<span>'+parseInt(dm[1])+'月出库 '+fmt(mg.total)+' 件</span>';
+      html+='<span class="mg-count">'+mg.count+' 单</span>';
+      html+='<span class="mg-arrow '+((expanded)?'':'collapsed')+'">▼</span>';
+      html+='</div>';
+      if(expanded){
+        html+='<div class="month-group-body">';
+        for(const o of mg.items){ html+=renderOutboundOrderCard(o); }
+        html+='</div>';
       }
+      html+='</div>';
     }
   }
   html+='</div>';
@@ -575,6 +691,27 @@ function renderRatioCard(name, la, yuan, isAll){
   return h;
 }
 
+// ====================== 远程数据拉取 ======================
+function fetchRemoteData(){
+  const dataUrl='https://kakaluotate.github.io/inventory-dashboard/data.json?t='+Date.now();
+  fetch(dataUrl).then(r=>r.json()).then(data=>{
+    if(data && data.products && data.stock_batches){
+      state=data;
+      state.outbound_records=state.outbound_records||[];
+      state.outbound_details=state.outbound_details||[];
+      computeNextIds();
+      const total=state.stock_batches.reduce((s,b)=>s+b.remaining,0);
+      const verEl=document.getElementById('data-version-label');
+      if(verEl) verEl.textContent=DATA_VERSION+'更新 | '+fmt(total)+'件';
+      const activePage=document.querySelector('.page.active');
+      if(activePage){
+        const tab=activePage.id.replace('page-','');
+        const renderers={dashboard:renderDashboard,stock:renderStock};
+        if(renderers[tab]) renderers[tab]();
+      }
+    }
+  }).catch(()=>{});
+}
 // ====================== 库存页 ======================
 let stockFilter='all';
 let stockSearch='';
@@ -1018,6 +1155,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 // 显示版本号，方便用户确认是否为最新版
 document.getElementById('data-version-label').textContent=DATA_VERSION+'更新 | '+fmt(state.stock_batches.reduce((s,b)=>s+b.remaining,0))+'件';
 renderDashboard();
+fetchRemoteData();
 </script>
 </body>
 </html>
