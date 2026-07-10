@@ -562,12 +562,12 @@ function renderDashboard(){
   html+='<div class="card"><h3>入库记录 <span class="sub">'+ibCount+' 笔'+(dashDateFilter!=='all'?' (筛选中)':'')+'</span></h3>';
   // 日期筛选条
   html+='<div class="date-filter-bar">';
-  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter('all')">全部</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter('today')">今天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter('yesterday')">昨天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter('7d')">近7天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter('30d')">近30天</span>';
-  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter('custom',this.value)">';
+  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter(\'all\')">全部</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter(\'today\')">今天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter(\'yesterday\')">昨天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter(\'7d\')">近7天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter(\'30d\')">近30天</span>';
+  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter(\'custom\',this.value)">';
   html+='</div>';
   if(ibCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">'+(dashDateFilter!=='all'?'该筛选范围无入库记录':'暂无入库记录')+'</div></div>'; }
   else if(filteredInbound.length<=12 || dashDateFilter!=='all'){
@@ -589,7 +589,7 @@ function renderDashboard(){
       const isCurrent=mk===currentMonth;
       const expanded=dashExpandedMonths[mk]!==false; // 默认展开（只有手动点收起才为false）
       html+='<div class="month-group">';
-      html+='<div class="month-group-head" onclick="toggleMonthExpand(''+mk+'')">';
+      html+='<div class="month-group-head" onclick="toggleMonthExpand(\''+mk+'\')">';
       const dm=mk.split('-');
       html+='<span>'+parseInt(dm[1])+'月入库 '+fmt(mg.total)+' 件</span>';
       html+='<span class="mg-count">'+mg.items.length+' 笔</span>';
@@ -618,12 +618,12 @@ function renderDashboard(){
   html+='<div class="card"><h3>出库记录 <span class="sub">'+filteredObCount+' 笔 / '+orderCount+' 单'+(dashDateFilter!=='all'?' (筛选中)':'')+'</span></h3>';
   // 日期筛选条（与入库共享筛选状态）
   html+='<div class="date-filter-bar">';
-  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter('all')">全部</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter('today')">今天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter('yesterday')">昨天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter('7d')">近7天</span>';
-  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter('30d')">近30天</span>';
-  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter('custom',this.value)">';
+  html+='<span class="df-tab '+((dashDateFilter==='all')?'active':'')+'" onclick="setDashDateFilter(\'all\')">全部</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='today')?'active':'')+'" onclick="setDashDateFilter(\'today\')">今天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='yesterday')?'active':'')+'" onclick="setDashDateFilter(\'yesterday\')">昨天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='7d')?'active':'')+'" onclick="setDashDateFilter(\'7d\')">近7天</span>';
+  html+='<span class="df-tab '+((dashDateFilter==='30d')?'active':'')+'" onclick="setDashDateFilter(\'30d\')">近30天</span>';
+  html+='<input type="date" class="df-custom" value="'+(dashCustomDate||'')+'" onchange="if(this.value)setDashDateFilter(\'custom\',this.value)">';
   html+='</div>';
   if(filteredObCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">'+(dashDateFilter!=='all'?'该筛选范围无出库记录':'暂无出库记录')+'</div></div>'; }
   else if(filteredOrders.length<=5 || dashDateFilter!=='all'){
@@ -645,7 +645,7 @@ function renderDashboard(){
       const mg=monthGroups[mk];
       const expanded=dashExpandedMonths[mk]!==false;
       html+='<div class="month-group">';
-      html+='<div class="month-group-head" onclick="toggleMonthExpand(''+mk+'')">';
+      html+='<div class="month-group-head" onclick="toggleMonthExpand(\''+mk+'\')">';
       const dm=mk.split('-');
       html+='<span>'+parseInt(dm[1])+'月出库 '+fmt(mg.total)+' 件</span>';
       html+='<span class="mg-count">'+mg.count+' 单</span>';
