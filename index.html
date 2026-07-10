@@ -237,21 +237,33 @@ let state = null;
 let nextIds = {product:1, batch:1, outbound:1, detail:1};
 
 function loadState(){
-  // 文件内嵌数据（由助手维护）为唯一数据源：每次打开都加载最新内容，
-  // 不被手机本地存储覆盖，因此助手更新文件后，重新打开即为最新看板。
-  // 版本号检测：如果本地缓存日期早于文件更新日期，强制刷新绕过浏览器缓存
-  const savedVer = localStorage.getItem('inv_data_ver') || '';
-  if(savedVer < DATA_VERSION){
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.setItem('inv_data_ver', String(DATA_VERSION));
-    // 如果不是首次加载（savedVer非空说明之前打开过旧版本），强制刷新绕过浏览器缓存
-    if(savedVer){
-      location.reload(true);
-      return; // reload 后会重新执行
-    }
-  }
+  // 优先从GitHub Pages拉取最新数据，失败则用内嵌数据兜底
   state = JSON.parse(JSON.stringify(INITIAL_DATA));
   computeNextIds();
+  // 异步拉取最新数据
+  fetchRemoteData();
+}
+function fetchRemoteData(){
+  const dataUrl='https://kakaluotate.github.io/inventory-dashboard/data.json?t='+Date.now();
+  fetch(dataUrl).then(r=>r.json()).then(data=>{
+    if(data && data.products && data.stock_batches){
+      state=data;
+      state.outbound_records=state.outbound_records||[];
+      state.outbound_details=state.outbound_details||[];
+      computeNextIds();
+      // 更新版本标签
+      const total=state.stock_batches.reduce((s,b)=>s+b.remaining,0);
+      const verEl=document.getElementById('data-version-label');
+      if(verEl) verEl.textContent=DATA_VERSION+'更新 | '+fmt(total)+'件';
+      // 重新渲染当前页面
+      const activePage=document.querySelector('.page.active');
+      if(activePage){
+        const tab=activePage.id.replace('page-','');
+        const renderers={dashboard:renderDashboard,stock:renderStock};
+        if(renderers[tab]) renderers[tab]();
+      }
+    }
+  }).catch(()=>{ /* 拉取失败，静默使用内嵌数据 */ });
 }
 function computeNextIds(){
   nextIds.product = Math.max(0,...state.products.map(p=>p.id))+1;
