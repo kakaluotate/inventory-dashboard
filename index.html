@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>库存看板（只读）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#f0f2f5;--card:#fff;--primary:#1a1a2e;--primary-light:#16213e;
+  --blue:#3498db;--red:#e74c3c;--green:#2ecc71;--orange:#f39c12;--purple:#9b59b6;
+  --text:#333;--text-light:#888;--text-lighter:#aaa;--border:#e8e8e8;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:640px;margin:0 auto;position:relative;background:var(--bg);}
+.topbar{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;padding:10px 16px;padding-top:max(10px,calc(var(--safe-top) + 4px));display:flex;justify-content:space-between;align-items:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;}
+.topbar h1{font-size:17px;font-weight:600;}
+.topbar .sync-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:15px;font-size:12px;cursor:pointer;}
+.topbar .sync-btn:active{background:rgba(255,255,255,0.3);}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 90px 12px;}
+.content::-webkit-scrollbar{width:0;}
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);z-index:20;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+.nav-item{flex:1;text-align:center;padding:7px 0 5px;cursor:pointer;color:var(--text-lighter);transition:color 0.2s;}
+.nav-item.active{color:var(--primary);}
+.nav-item .nav-icon{font-size:21px;line-height:1;margin-bottom:1px;}
+.nav-item .nav-label{font-size:11px;font-weight:500;}
+.nav-item.active .nav-label{font-weight:600;}
+.page{display:none;}
+.page.active{display:block;}
+.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.05);}
+.card h3{font-size:15px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.card h3 .sub{font-size:11px;color:var(--text-lighter);font-weight:normal;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.stat-box{background:var(--card);border-radius:12px;padding:13px;box-shadow:0 1px 4px rgba(0,0,0,0.05);cursor:pointer;transition:transform 0.15s;}
+.stat-box:active{transform:scale(0.97);}
+.stat-box .sb-label{font-size:12px;color:var(--text-light);margin-bottom:3px;}
+.stat-box .sb-value{font-size:25px;font-weight:700;}
+.stat-box .sb-sub{font-size:11px;color:var(--text-lighter);margin-top:1px;}
+.stat-box.blue .sb-value{color:var(--blue);}
+.stat-box.red .sb-value{color:var(--red);}
+.stat-box.green .sb-value{color:var(--green);}
+.stat-box.purple .sb-value{color:var(--purple);}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap;}
+.tag-ww{background:#e3f2fd;color:#1565c0;}
+.tag-hb{background:#fce4ec;color:#c62828;}
+.tag-init{background:#e8f5e9;color:#2e7d32;}
+.tag-inbound{background:#fff3e0;color:#e65100;}
+.form-group{margin-bottom:13px;}
+.form-label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;}
+.form-label .req{color:var(--red);}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:#fff;color:var(--text);-webkit-appearance:none;appearance:none;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(52,152,219,0.1);}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.form-textarea{min-height:56px;resize:vertical;font-family:inherit;}
+.form-row{display:flex;gap:10px;}
+.form-row .form-group{flex:1;}
+.btn{display:inline-block;padding:11px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:opacity 0.15s;-webkit-appearance:none;appearance:none;}
+.btn:active{opacity:0.7;}
+.btn-block{display:block;width:100%;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-warn{background:var(--orange);color:#fff;}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border);}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.progress{display:flex;align-items:center;gap:6px;}
+.progress-bar{flex:1;height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:4px;}
+.progress-text{font-size:11px;min-width:34px;text-align:right;font-weight:600;}
+.stock-item{background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer;}
+.stock-item:active{background:#f5f7fa;}
+.stock-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.stock-item-name{font-size:15px;font-weight:600;}
+.stock-item-total{font-size:20px;font-weight:700;}
+.stock-item-wh{display:flex;gap:10px;font-size:12px;color:var(--text-light);}
+.stock-item-wh span{display:flex;align-items:center;gap:3px;}
+.dot-ww{width:8px;height:8px;border-radius:50%;background:var(--blue);}
+.dot-hb{width:8px;height:8px;border-radius:50%;background:var(--red);}
+.batch-item{background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--blue);}
+.batch-item.hb{border-left-color:var(--red);}
+.batch-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.batch-item-date{font-size:13px;font-weight:600;}
+.batch-item-qty{font-size:13px;font-weight:600;}
+.batch-item-meta{font-size:11px;color:var(--text-light);}
+.outbound-item{background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.outbound-item:active{background:#f5f7fa;}
+.oi-date{text-align:center;min-width:46px;flex-shrink:0;}
+.oi-day{font-size:20px;font-weight:700;line-height:1;}
+.oi-month{font-size:10px;color:var(--text-lighter);}
+.oi-divider{width:1px;height:34px;background:var(--border);flex-shrink:0;}
+.oi-info{flex:1;min-width:0;}
+.oi-product{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.oi-meta{font-size:11px;color:var(--text-light);margin-top:2px;}
+.oi-qty{text-align:right;flex-shrink:0;}
+.oi-num{font-size:18px;font-weight:700;color:var(--red);}
+.ratio-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.ratio-card.total{border:2px solid var(--primary);background:#f8f9ff;}
+.ratio-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.ratio-card-head .wh-name{font-size:14px;font-weight:600;}
+.ratio-status{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+.ratio-status.normal{background:#e8f5e9;color:#2e7d32;}
+.ratio-status.yuan_excess{background:#fff3e0;color:#e65100;}
+.ratio-status.la_excess{background:#fce4ec;color:#c62828;}
+.ratio-status.no_la{background:#ffebee;color:#b71c1c;}
+.ratio-numbers{display:flex;gap:14px;margin-bottom:8px;}
+.ratio-number{flex:1;text-align:center;}
+.ratio-number .num{font-size:21px;font-weight:700;}
+.ratio-number .num.la{color:var(--red);}
+.ratio-number .num.yuan{color:var(--blue);}
+.ratio-number .lbl{font-size:11px;color:var(--text-light);margin-top:1px;}
+.ratio-bar{display:flex;height:18px;border-radius:6px;overflow:hidden;background:#f0f0f0;margin-bottom:4px;}
+.ratio-bar .bar-la{background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;overflow:hidden;}
+.ratio-bar .bar-yuan{background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;overflow:hidden;}
+.ratio-ref{position:relative;height:2px;background:#ccc;margin-bottom:8px;}
+.ratio-ref::after{content:"标准线 22.2%";position:absolute;right:0;top:-14px;font-size:9px;color:var(--text-lighter);}
+.ratio-detail{font-size:12px;color:var(--text-light);margin-top:6px;line-height:1.5;}
+.ratio-detail .highlight{font-weight:600;}
+.ratio-detail .pos{color:#e65100;font-weight:600;}
+.ratio-detail .neg{color:#c62828;font-weight:600;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:flex-end;}
+.modal-overlay.show{display:flex;}
+.modal-content{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:82vh;overflow-y:auto;animation:slideUp 0.25s ease;padding-bottom:var(--safe-bottom);}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;border-radius:16px 16px 0 0;z-index:1;}
+.modal-header h3{font-size:16px;font-weight:600;}
+.modal-close{font-size:24px;cursor:pointer;color:var(--text-lighter);line-height:1;padding:0 4px;}
+.modal-body{padding:14px 16px 30px;}
+.modal-table{width:100%;border-collapse:collapse;font-size:13px;}
+.modal-table th{background:#f5f7fa;padding:8px 6px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid var(--border);}
+.modal-table td{padding:8px 6px;border-bottom:1px solid #f5f5f5;}
+.modal-table tr:active td{background:#fafbfc;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-lighter);}
+.empty-state .es-icon{font-size:46px;margin-bottom:10px;opacity:0.4;}
+.empty-state .es-text{font-size:13px;}
+.filter-tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;}
+.filter-tabs::-webkit-scrollbar{display:none;}
+.filter-tab{flex:1;min-width:64px;text-align:center;padding:8px 10px;background:#fff;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;color:var(--text-light);white-space:nowrap;}
+.filter-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600;}
+.search-box{position:relative;margin-bottom:12px;}
+.search-box input{width:100%;padding:10px 12px 10px 34px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff;}
+'.search-box::before{content:"搜";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:10px;opacity:0.4;color:var(--text-light);}
+.chart-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
+.chart-row .cr-name{width:80px;flex-shrink:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chart-row .cr-bar{flex:1;height:18px;border-radius:5px;overflow:hidden;display:flex;background:#f5f5f5;}
+.chart-row .cr-ww{background:var(--blue);}
+.chart-row .cr-hb{background:var(--red);}
+.chart-row .cr-total{width:48px;text-align:right;font-weight:700;flex-shrink:0;}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--text-light);margin-top:8px;justify-content:center;}
+.legend span{display:flex;align-items:center;gap:4px;}
+.legend .lg-dot{width:10px;height:10px;border-radius:2px;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,0.82);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:2000;opacity:0;transition:all 0.25s;max-width:84%;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.section-title{font-size:13px;font-weight:600;color:var(--text-light);margin:4px 2px 10px;display:flex;justify-content:space-between;align-items:center;}
+.multi-row{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#fafafa;}
+.multi-row .mr-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600;}
+.multi-row .mr-del{color:var(--red);font-size:18px;cursor:pointer;padding:0 6px;}
+.hidden{display:none!important;}
+.list-item{background:#fff;border-radius:10px;padding:13px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer;}
+.list-item:active{background:#f5f7fa;}
+.list-item .li-main{font-size:15px;font-weight:600;}
+.list-item .li-sub{font-size:11px;color:var(--text-light);margin-top:2px;}
+.info-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.info-line:last-child{border-bottom:none;}
+.info-line .il-label{color:var(--text-light);}
+.info-line .il-value{font-weight:600;}
+.danger-zone{margin-top:16px;border-top:1px dashed var(--border);padding-top:14px;}
+.warn-box{background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px;font-size:12px;color:#e65100;margin-bottom:12px;line-height:1.5;}
+
+.order-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.05);cursor:pointer;transition:transform 0.15s;}
+.order-card:active{transform:scale(0.98);}
+.order-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.order-card-id{font-size:13px;font-weight:700;color:var(--primary);background:#f0f2f5;padding:3px 8px;border-radius:4px;}
+.order-card-info{font-size:12px;color:var(--text-light);}
+.order-card-total{font-size:20px;font-weight:700;color:var(--red);margin-bottom:6px;}
+.order-card-items{border-top:1px solid var(--border);padding-top:8px;}
+.order-item-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid #f5f5f5;}
+.order-item-row:last-child{border-bottom:none;}
+.order-item-name{font-weight:600;}
+.order-item-qty{color:var(--red);font-weight:600;}
+.tag-order{background:#e8eaf6;color:#283593;}.tag-transfer{background:#e8eaf6;color:#283593;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <h1>库存看板</h1>
+    <div class="topbar-right"><span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;">只读分享</span> <span id="data-version-label">v3</span></div>
+  </div>
+  <div class="content">
+    <!-- 看板 -->
+    <div class="page active" id="page-dashboard"></div>
+    <!-- 库存 -->
+    <div class="page" id="page-stock"></div>
+    <!-- 入库 -->
+    <div class="page" id="page-inbound"></div>
+    <!-- 出库 -->
+    <div class="page" id="page-outbound"></div>
+    <!-- 更多 -->
+    <div class="page" id="page-more"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')"><div class="nav-icon">看</div><div class="nav-label">看板</div></div>
+    <div class="nav-item" data-tab="stock" onclick="switchTab('stock')"><div class="nav-icon">仓</div><div class="nav-label">库存</div></div>
+    <div class="nav-item hidden" data-tab="inbound" onclick="switchTab('inbound')"><div class="nav-icon">入</div><div class="nav-label">入库</div></div>
+    <div class="nav-item hidden" data-tab="outbound" onclick="switchTab('outbound')"><div class="nav-icon">出</div><div class="nav-label">出库</div></div>
+    <div class="nav-item hidden" data-tab="more" onclick="switchTab('more')"><div class="nav-icon">设</div><div class="nav-label">更多</div></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content">
+    <div class="modal-header"><h3 id="modal-title">标题</h3><span class="modal-close" onclick="closeModal()">×</span></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ====================== 只读模式标志 ======================
+const IS_READONLY = true;
+// ====================== 初始数据 ======================
+const INITIAL_DATA = {"products":[{"id":1,"name":"大盘鸡底料","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":2,"name":"大盘鸡鸡块","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":3,"name":"番茄底料","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":4,"name":"粉耗子","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":5,"name":"鸡精","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":6,"name":"辣白菜","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":7,"name":"米粉","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":8,"name":"新雅轩辣酱","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":9,"name":"新雅轩原酱","unit":"","spec":"","created_at":"2026-07-08 16:07:19"},{"id":10,"name":"信合米粉","unit":"","spec":"","created_at":"2026-07-08 16:07:19"}],"stock_batches":[{"id":1,"product_id":1,"batch_date":"2026-07-08","quantity":7.0,"remaining":7.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-05-08"},{"id":2,"product_id":3,"batch_date":"2026-07-08","quantity":10.0,"remaining":10.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-01-21"},{"id":3,"product_id":4,"batch_date":"2026-07-08","quantity":106.0,"remaining":82.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-06-23"},{"id":4,"product_id":5,"batch_date":"2026-07-08","quantity":159.0,"remaining":145.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-05-05"},{"id":5,"product_id":6,"batch_date":"2026-07-08","quantity":66.0,"remaining":26.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-06-22"},{"id":6,"product_id":7,"batch_date":"2026-07-08","quantity":400.0,"remaining":400.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-07-04"},{"id":7,"product_id":8,"batch_date":"2026-07-08","quantity":89.0,"remaining":47.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-05-25"},{"id":8,"product_id":9,"batch_date":"2026-07-08","quantity":457.0,"remaining":246.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-06-09"},{"id":9,"product_id":10,"batch_date":"2026-07-07","quantity":1000.0,"remaining":935.0,"batch_type":"initial","remark":"万纬仓初期库存","created_at":"2026-07-08 16:07:19","warehouse":"万纬仓","production_date":"2026-07-01"},{"id":10,"product_id":1,"batch_date":"2026-07-08","quantity":7.0,"remaining":5.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-05-08"},{"id":11,"product_id":2,"batch_date":"2026-07-08","quantity":13.0,"remaining":13.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-07-08"},{"id":12,"product_id":3,"batch_date":"2026-07-08","quantity":5.0,"remaining":5.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-01-21"},{"id":13,"product_id":4,"batch_date":"2026-07-08","quantity":88.0,"remaining":61.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-06-23"},{"id":14,"product_id":5,"batch_date":"2026-07-08","quantity":112.0,"remaining":89.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-05-05"},{"id":15,"product_id":6,"batch_date":"2026-07-08","quantity":27.0,"remaining":0.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-06-22"},{"id":16,"product_id":7,"batch_date":"2026-07-08","quantity":400.0,"remaining":400.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-07-04"},{"id":17,"product_id":8,"batch_date":"2026-07-04","quantity":42.0,"remaining":0.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-05-29"},{"id":18,"product_id":9,"batch_date":"2026-07-04","quantity":403.0,"remaining":121.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-06-09"},{"id":19,"product_id":10,"batch_date":"2026-07-07","quantity":1300.0,"remaining":1224.0,"batch_type":"initial","remark":"翰溥仓初期库存","created_at":"2026-07-08 16:08:36","warehouse":"翰溥仓","production_date":"2026-07-01"},{"id":26,"product_id":7,"batch_date":"2026-07-06","quantity":355.0,"remaining":156.0,"batch_type":"initial","remark":"","created_at":"2026-07-08 18:38:04","warehouse":"万纬仓","production_date":"2026-07-04"},{"id":27,"product_id":10,"batch_date":"2026-06-23","quantity":174.0,"remaining":0.0,"batch_type":"initial","remark":"","created_at":"2026-07-08 18:38:04","warehouse":"万纬仓","production_date":"2026-06-15"},{"id":28,"product_id":7,"batch_date":"2026-07-06","quantity":276.0,"remaining":62.0,"batch_type":"initial","remark":"","created_at":"2026-07-08 19:00:00","warehouse":"翰溥仓","production_date":"2026-07-04"},{"id":29,"product_id":10,"batch_date":"2026-06-23","quantity":277.0,"remaining":0.0,"batch_type":"initial","remark":"","created_at":"2026-07-08 19:00:00","warehouse":"翰溥仓","production_date":"2026-06-15"},{"id":30,"product_id":6,"warehouse":"翰溥仓","batch_date":"2026-07-09","production_date":"2026-07-06","quantity":120,"remaining":120,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":31,"product_id":9,"warehouse":"翰溥仓","batch_date":"2026-07-09","production_date":"2026-06-25","quantity":180,"remaining":180,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":32,"product_id":8,"warehouse":"翰溥仓","batch_date":"2026-07-09","production_date":"2026-07-02","quantity":120,"remaining":97,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":33,"product_id":6,"warehouse":"万纬仓","batch_date":"2026-07-09","production_date":"2026-07-06","quantity":80,"remaining":80,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":34,"product_id":9,"warehouse":"万纬仓","batch_date":"2026-07-09","production_date":"2026-06-25","quantity":120,"remaining":120,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":35,"product_id":8,"warehouse":"万纬仓","batch_date":"2026-07-09","production_date":"2026-05-29","quantity":38,"remaining":38,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":36,"product_id":8,"warehouse":"万纬仓","batch_date":"2026-07-09","production_date":"2026-07-02","quantity":42,"remaining":42,"batch_type":"inbound","remark":"","created_at":"2026-07-09 16:58:46"},{"id":37,"product_id":6,"warehouse":"翰溥仓","batch_date":"2026-07-10","production_date":"2026-06-22","quantity":30,"remaining":24.0,"batch_type":"transfer","remark":"调拨2026071001","created_at":"2026-07-10 08:08:12"},{"id":38,"product_id":2,"warehouse":"翰溥仓","batch_date":"2026-07-09","production_date":"2026-05-09","quantity":20,"remaining":20,"batch_type":"inbound","remark":"","created_at":"2026-07-10 09:06:01"}],"outbound_records":[{"id":1,"product_id":4,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":13.0,"remark":"","created_at":"2026-07-09 22:06:18","order_id":"城配2026070901"},{"id":2,"product_id":5,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":7.0,"remark":"","created_at":"2026-07-09 22:06:24","order_id":"城配2026070901"},{"id":3,"product_id":6,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":4.0,"remark":"","created_at":"2026-07-09 22:06:29","order_id":"城配2026070901"},{"id":4,"product_id":7,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":75.0,"remark":"","created_at":"2026-07-09 22:06:33","order_id":"城配2026070901"},{"id":5,"product_id":8,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":25.0,"remark":"","created_at":"2026-07-09 22:06:41","order_id":"城配2026070901"},{"id":6,"product_id":9,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":111.0,"remark":"","created_at":"2026-07-09 22:06:54","order_id":"城配2026070901"},{"id":7,"product_id":10,"warehouse":"万纬仓","outbound_date":"2026-07-09","quantity":121.0,"remark":"","created_at":"2026-07-09 22:07:00","order_id":"城配2026070901"},{"id":8,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":1.0,"remark":"","order_id":"咸阳2026071001","created_at":"2026-07-10 07:33:22"},{"id":9,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":10.0,"remark":"","order_id":"咸阳2026071001","created_at":"2026-07-10 07:33:59"},{"id":10,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":9.0,"remark":"","order_id":"咸阳2026071001","created_at":"2026-07-10 07:34:06"},{"id":11,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":30.0,"remark":"","order_id":"咸阳2026071001","created_at":"2026-07-10 07:34:12"},{"id":12,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":31.0,"remark":"","order_id":"咸阳2026071001","created_at":"2026-07-10 07:34:19"},{"id":13,"product_id":6,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":30,"remark":"","order_id":"调拨2026071001","created_at":"2026-07-10 08:08:12"},{"id":14,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":4,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":15,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":6,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":16,"product_id":6,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":8,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":17,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":28,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":18,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":19,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":14,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":20,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":18,"remark":"","order_id":"明亨2026071001AB","created_at":"2026-07-10 08:14:04"},{"id":21,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":1,"remark":"","order_id":"明亨2026071001CD","created_at":"2026-07-10 08:14:04"},{"id":22,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":1,"remark":"","order_id":"明亨2026071001CD","created_at":"2026-07-10 08:14:04"},{"id":23,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":5,"remark":"","order_id":"明亨2026071001CD","created_at":"2026-07-10 08:14:04"},{"id":24,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":23,"remark":"","order_id":"明亨2026071001CD","created_at":"2026-07-10 08:14:04"},{"id":25,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":34,"remark":"","order_id":"明亨2026071001CD","created_at":"2026-07-10 08:14:04"},{"id":26,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":5,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:04"},{"id":27,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":4,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:04"},{"id":28,"product_id":6,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":7,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:04"},{"id":29,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":28,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:04"},{"id":30,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":7,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:04"},{"id":31,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":24,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:05"},{"id":32,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":46,"remark":"","order_id":"明亨2026071001HK","created_at":"2026-07-10 08:14:05"},{"id":33,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":4,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":34,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":2,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":35,"product_id":6,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":2,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":36,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":52,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":37,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":15,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":38,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":60,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":39,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":36,"remark":"","order_id":"明亨2026071002","created_at":"2026-07-10 08:15:09"},{"id":40,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":41,"product_id":6,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":2,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":42,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":18,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":43,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":44,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":14,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":45,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":16,"remark":"","order_id":"四季安2026071001","created_at":"2026-07-10 08:38:09"},{"id":46,"product_id":4,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"安能2026071001","created_at":"2026-07-10 08:54:54"},{"id":47,"product_id":6,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":2,"remark":"","order_id":"安能2026071001","created_at":"2026-07-10 08:54:54"},{"id":48,"product_id":8,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"安能2026071001","created_at":"2026-07-10 08:54:54"},{"id":49,"product_id":9,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":18,"remark":"","order_id":"安能2026071001","created_at":"2026-07-10 08:54:54"},{"id":50,"product_id":10,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":38,"remark":"","order_id":"安能2026071001","created_at":"2026-07-10 08:54:54"},{"id":51,"product_id":4,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":1,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":52,"product_id":5,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":4,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":53,"product_id":7,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":52,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":54,"product_id":8,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":5,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":55,"product_id":9,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":28,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":56,"product_id":10,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":56,"remark":"","order_id":"壹米2026071001","created_at":"2026-07-10 08:54:54"},{"id":57,"product_id":4,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":7,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":58,"product_id":5,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":59,"product_id":6,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":4,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":60,"product_id":7,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":54,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":61,"product_id":8,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":9,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":62,"product_id":9,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":51,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":63,"product_id":10,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":24,"remark":"","order_id":"百世2026071001","created_at":"2026-07-10 08:54:54"},{"id":64,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":1,"remark":"","order_id":"雨润2026071001","created_at":"2026-07-10 08:56:09"},{"id":65,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":8,"remark":"","order_id":"雨润2026071001","created_at":"2026-07-10 08:56:09"},{"id":66,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":1,"remark":"","order_id":"雨润2026071001","created_at":"2026-07-10 08:56:09"},{"id":67,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":12,"remark":"","order_id":"雨润2026071001","created_at":"2026-07-10 08:56:09"},{"id":68,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":8,"remark":"","order_id":"雨润2026071001","created_at":"2026-07-10 08:56:09"},{"id":69,"product_id":1,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":2,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":70,"product_id":4,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":11,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":71,"product_id":5,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":7,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":72,"product_id":6,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":14,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":73,"product_id":7,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":70,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":74,"product_id":8,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":22,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":75,"product_id":9,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":105,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":76,"product_id":10,"warehouse":"翰溥仓","outbound_date":"2026-07-10","quantity":164,"remark":"","order_id":"城配2026071001","created_at":"2026-07-10 09:04:02"},{"id":77,"product_id":7,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":18,"remark":"","order_id":"百世2026071002","created_at":"2026-07-10 09:20:14"},{"id":78,"product_id":9,"warehouse":"万纬仓","outbound_date":"2026-07-10","quantity":3,"remark":"","order_id":"百世2026071002","created_at":"2026-07-10 09:20:14"}],"outbound_details":[{"id":1,"outbound_id":1,"batch_id":3,"quantity":13.0},{"id":2,"outbound_id":2,"batch_id":4,"quantity":7.0},{"id":3,"outbound_id":3,"batch_id":5,"quantity":4.0},{"id":4,"outbound_id":4,"batch_id":26,"quantity":75.0},{"id":5,"outbound_id":5,"batch_id":7,"quantity":25.0},{"id":6,"outbound_id":6,"batch_id":8,"quantity":111.0},{"id":7,"outbound_id":7,"batch_id":27,"quantity":121.0},{"id":8,"outbound_id":8,"batch_id":13,"quantity":1.0},{"id":9,"outbound_id":9,"batch_id":28,"quantity":10.0},{"id":10,"outbound_id":10,"batch_id":17,"quantity":9.0},{"id":11,"outbound_id":11,"batch_id":18,"quantity":30.0},{"id":12,"outbound_id":12,"batch_id":29,"quantity":31.0},{"id":13,"outbound_id":13,"batch_id":5,"quantity":30},{"id":14,"outbound_id":14,"batch_id":13,"quantity":4},{"id":15,"outbound_id":15,"batch_id":14,"quantity":6},{"id":16,"outbound_id":16,"batch_id":15,"quantity":8},{"id":17,"outbound_id":17,"batch_id":28,"quantity":28},{"id":18,"outbound_id":18,"batch_id":17,"quantity":3},{"id":19,"outbound_id":19,"batch_id":18,"quantity":14},{"id":20,"outbound_id":20,"batch_id":29,"quantity":18},{"id":21,"outbound_id":21,"batch_id":13,"quantity":1},{"id":22,"outbound_id":22,"batch_id":14,"quantity":1},{"id":23,"outbound_id":23,"batch_id":17,"quantity":5},{"id":24,"outbound_id":24,"batch_id":18,"quantity":23},{"id":25,"outbound_id":25,"batch_id":29,"quantity":34},{"id":26,"outbound_id":26,"batch_id":13,"quantity":5},{"id":27,"outbound_id":27,"batch_id":14,"quantity":4},{"id":28,"outbound_id":28,"batch_id":15,"quantity":7},{"id":29,"outbound_id":29,"batch_id":28,"quantity":28},{"id":30,"outbound_id":30,"batch_id":17,"quantity":7},{"id":31,"outbound_id":31,"batch_id":18,"quantity":24},{"id":32,"outbound_id":32,"batch_id":29,"quantity":46},{"id":33,"outbound_id":33,"batch_id":13,"quantity":4},{"id":34,"outbound_id":34,"batch_id":14,"quantity":2},{"id":35,"outbound_id":35,"batch_id":15,"quantity":2},{"id":36,"outbound_id":36,"batch_id":28,"quantity":52},{"id":37,"outbound_id":37,"batch_id":17,"quantity":15},{"id":38,"outbound_id":38,"batch_id":18,"quantity":60},{"id":39,"outbound_id":39,"batch_id":29,"quantity":36},{"id":40,"outbound_id":40,"batch_id":14,"quantity":3},{"id":41,"outbound_id":41,"batch_id":15,"quantity":2},{"id":42,"outbound_id":42,"batch_id":28,"quantity":18},{"id":43,"outbound_id":43,"batch_id":17,"quantity":3.0},{"id":44,"outbound_id":44,"batch_id":18,"quantity":14},{"id":45,"outbound_id":45,"batch_id":29,"quantity":16},{"id":46,"outbound_id":46,"batch_id":3,"quantity":3},{"id":47,"outbound_id":47,"batch_id":5,"quantity":2},{"id":48,"outbound_id":48,"batch_id":7,"quantity":3},{"id":49,"outbound_id":49,"batch_id":8,"quantity":18},{"id":50,"outbound_id":50,"batch_id":27,"quantity":38},{"id":51,"outbound_id":51,"batch_id":3,"quantity":1},{"id":52,"outbound_id":52,"batch_id":4,"quantity":4},{"id":53,"outbound_id":53,"batch_id":26,"quantity":52},{"id":54,"outbound_id":54,"batch_id":7,"quantity":5},{"id":55,"outbound_id":55,"batch_id":8,"quantity":28},{"id":56,"outbound_id":56,"batch_id":27,"quantity":15.0},{"id":57,"outbound_id":56,"batch_id":9,"quantity":41.0},{"id":58,"outbound_id":57,"batch_id":3,"quantity":7},{"id":59,"outbound_id":58,"batch_id":4,"quantity":3},{"id":60,"outbound_id":59,"batch_id":5,"quantity":4},{"id":61,"outbound_id":60,"batch_id":26,"quantity":54},{"id":62,"outbound_id":61,"batch_id":7,"quantity":9},{"id":63,"outbound_id":62,"batch_id":8,"quantity":51},{"id":64,"outbound_id":63,"batch_id":9,"quantity":24},{"id":65,"outbound_id":64,"batch_id":13,"quantity":1},{"id":66,"outbound_id":65,"batch_id":28,"quantity":8},{"id":67,"outbound_id":66,"batch_id":32,"quantity":1},{"id":68,"outbound_id":67,"batch_id":18,"quantity":12},{"id":69,"outbound_id":68,"batch_id":29,"quantity":8},{"id":70,"outbound_id":69,"batch_id":10,"quantity":2},{"id":71,"outbound_id":70,"batch_id":13,"quantity":11},{"id":72,"outbound_id":71,"batch_id":14,"quantity":7},{"id":73,"outbound_id":72,"batch_id":15,"quantity":8.0},{"id":74,"outbound_id":72,"batch_id":37,"quantity":6.0},{"id":75,"outbound_id":73,"batch_id":28,"quantity":70},{"id":76,"outbound_id":74,"batch_id":32,"quantity":22},{"id":77,"outbound_id":75,"batch_id":18,"quantity":105},{"id":78,"outbound_id":76,"batch_id":29,"quantity":88.0},{"id":79,"outbound_id":76,"batch_id":19,"quantity":76.0},{"id":80,"outbound_id":77,"batch_id":26,"quantity":18},{"id":81,"outbound_id":78,"batch_id":8,"quantity":3}]};
+const STORAGE_KEY = 'inventory_app_v1';
+const DATA_VERSION = '2026-07-10'; // 数据更新日期，助手每次更新时改为当天日期
+const TARGET_RATIO = 3.5; // 辣酱:原酱 = 1:3.5
+const ALIASES = {'龙兴米粉':'米粉'};
+const OUTBOUND_KEYWORDS = ['城配','咸阳','四季安','鄠邑','明亨','壹米','安能','百世','专线','调拨','雨润'];
+
+// ====================== 状态 ======================
+let state = null;
+let nextIds = {product:1, batch:1, outbound:1, detail:1};
+
+function loadState(){
+  // 文件内嵌数据（由助手维护）为唯一数据源：每次打开都加载最新内容，
+  // 不被手机本地存储覆盖，因此助手更新文件后，重新打开即为最新看板。
+  // 版本号检测：如果本地缓存日期早于文件更新日期，强制刷新绕过浏览器缓存
+  const savedVer = localStorage.getItem('inv_data_ver') || '';
+  if(savedVer < DATA_VERSION){
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem('inv_data_ver', String(DATA_VERSION));
+    // 如果不是首次加载（savedVer非空说明之前打开过旧版本），强制刷新绕过浏览器缓存
+    if(savedVer){
+      location.reload(true);
+      return; // reload 后会重新执行
+    }
+  }
+  state = JSON.parse(JSON.stringify(INITIAL_DATA));
+  computeNextIds();
+}
+function computeNextIds(){
+  nextIds.product = Math.max(0,...state.products.map(p=>p.id))+1;
+  nextIds.batch = Math.max(0,...state.stock_batches.map(b=>b.id))+1;
+  nextIds.outbound = Math.max(0,...state.outbound_records.map(o=>o.id))+1;
+  nextIds.detail = Math.max(0,...state.outbound_details.map(d=>d.id))+1;
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ====================== 工具函数 ======================
+function fmt(n){ n=Number(n); if(Number.isInteger(n)) return String(n); return String(Math.round(n*1000)/1000); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function nowStr(){ const d=new Date(); const p=x=>String(x).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+function esc(s){ s=String(s==null?'':s); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function normalizeName(name){ name=(name||'').trim(); return ALIASES[name]||name; }
+function getProduct(id){ return state.products.find(p=>p.id===id); }
+function getProductId(name){ name=normalizeName(name); return state.products.find(p=>p.name===name)?.id||null; }
+function getProductName(id){ const p=getProduct(id); return p?p.name:'(未知商品)'; }
+function getWarehouses(){ return [...new Set(state.stock_batches.map(b=>b.warehouse).filter(w=>w))].sort(); }
+function fifoSort(a,b){
+  if(a.production_date!==b.production_date) return a.production_date<b.production_date?-1:1;
+  if(a.batch_date!==b.batch_date) return a.batch_date<b.batch_date?-1:1;
+  return a.id-b.id;
+}
+
+// ====================== 核心逻辑（移植自 inventory_manager.py）======================
+function addProduct(name, unit, spec){
+  name=normalizeName(name);
+  if(!name) return null;
+  const exist=getProductId(name);
+  if(exist) return exist;
+  const pid=nextIds.product++;
+  state.products.push({id:pid, name, unit:unit||'', spec:spec||'', created_at:nowStr()});
+  saveState();
+  return pid;
+}
+function addInbound(productId, qty, batchDate, warehouse, prodDate, batchType, remark){
+  if(prodDate==null||prodDate==='') prodDate=batchDate;
+  qty=Number(qty);
+  const bid=nextIds.batch++;
+  state.stock_batches.push({
+    id:bid, product_id:productId, warehouse, batch_date:batchDate,
+    production_date:prodDate, quantity:qty, remaining:qty,
+    batch_type:batchType||'inbound', remark:remark||'', created_at:nowStr()
+  });
+  saveState();
+  return bid;
+}
+function addInboundMulti(productId, batchDate, warehouse, details, batchType, remark){
+  const sorted=[...details].sort((a,b)=>a.prodDate<b.prodDate?-1:1);
+  const ids=[];
+  for(const d of sorted){ ids.push(addInbound(productId, d.qty, batchDate, warehouse, d.prodDate, batchType, remark)); }
+  return ids;
+}
+function checkFifoViolation(productId, qty, warehouse){
+  qty=Number(qty);
+  const allBatches=state.stock_batches.filter(b=>b.product_id===productId && b.remaining>0).sort(fifoSort);
+  const whBatches=allBatches.filter(b=>b.warehouse===warehouse);
+  const whTotal=whBatches.reduce((s,b)=>s+b.remaining,0);
+  if(whTotal<qty){ return {violated:true,type:'insufficient',msg:`仓库 ${warehouse} 库存不足！需要=${qty} 该仓可用=${whTotal}`}; }
+  let rem=qty; const totalConsumed={};
+  for(const b of allBatches){ if(rem<=0)break; const d=Math.min(b.remaining,rem); totalConsumed[b.id]=d; rem-=d; }
+  rem=qty; const whConsumed={};
+  for(const b of whBatches){ if(rem<=0)break; const d=Math.min(b.remaining,rem); whConsumed[b.id]=d; rem-=d; }
+  const overConsumed={};
+  for(const bid in whConsumed){ const tq=totalConsumed[bid]||0; if(whConsumed[bid]>tq) overConsumed[bid]=whConsumed[bid]-tq; }
+  if(Object.keys(overConsumed).length===0) return {violated:false};
+  const overBatches=allBatches.filter(b=>b.id in overConsumed);
+  const otherOld=allBatches.filter(b=>{ const tq=totalConsumed[b.id]||0; const wq=whConsumed[b.id]||0; return tq>wq && b.warehouse!==warehouse; })
+    .map(b=>({batch_id:b.id,warehouse:b.warehouse,production_date:b.production_date,remaining:b.remaining,should_consume:(totalConsumed[b.id]||0)-(whConsumed[b.id]||0)}));
+  return {violated:true,type:'over',msg:{overBatches,overConsumed,otherOld,qty,warehouse}};
+}
+function addOutbound(productId, qty, date, warehouse, remark, orderId){
+  qty=Number(qty);
+  const check=checkFifoViolation(productId, qty, warehouse);
+  if(check.type==='insufficient'){ return {success:false,message:check.msg}; }
+  const batches=state.stock_batches.filter(b=>b.product_id===productId && b.warehouse===warehouse && b.remaining>0).sort(fifoSort);
+  let avail=batches.reduce((s,b)=>s+b.remaining,0);
+  if(avail<qty){ return {success:false,message:`仓库 ${warehouse} 实际可用库存不足（${avail} < ${qty}）`}; }
+  const oid=nextIds.outbound++;
+  state.outbound_records.push({id:oid,product_id:productId,warehouse,outbound_date:date,quantity:qty,remark:remark||'',order_id:orderId||''});
+  let rem=qty; const details=[];
+  for(const b of batches){
+    if(rem<=0)break;
+    const deduct=Math.min(b.remaining,rem);
+    b.remaining=Math.round((b.remaining-deduct)*1000)/1000;
+    const did=nextIds.detail++;
+    state.outbound_details.push({id:did,outbound_id:oid,batch_id:b.id,quantity:deduct});
+    details.push({batch_id:b.id,production_date:b.production_date,deducted:deduct});
+    rem-=deduct;
+  }
+  saveState();
+  return {success:true,message:'出库成功',details,warning:check.violated?check.msg:null};
+}
+
+
+// 出库单号自动生成
+function genOrderId(keyword, date){
+  if(!date) date=todayStr();
+  keyword = keyword || '城配';
+  const prefix=keyword+date.replace(/-/g,'');
+  const existing=state.outbound_records.filter(r=>r.order_id&&r.order_id.startsWith(prefix)).map(r=>r.order_id);
+  let seq=1;
+  if(existing.length){
+    const seqs=existing.map(e=>parseInt(e.slice(-2))).filter(n=>!isNaN(n));
+    if(seqs.length) seq=Math.max(...seqs)+1;
+  }
+  return prefix+String(seq).padStart(2,'0');
+}
+// 解析出库单号：提取关键词、日期、序号
+function parseOrderId(orderId){
+  if(!orderId) return {keyword:'',date:'',seq:0,group:'',label:'未分组'};
+  // 格式：关键词YYYYMMDDnn[分组后缀]，分组后缀为1-2位字母(AB/CD/HK等)
+  const m = orderId.match(/^(.+?)(\d{8})(\d{2})([A-Za-z]{0,2})$/);
+  if(m) return {keyword:m[1],date:m[2],seq:parseInt(m[3]),group:m[4],label:m[1]+(m[4]?' '+m[4]:'')};
+  // 无日期序号的纯关键词
+  return {keyword:orderId,date:'',seq:0,group:'',label:orderId};
+}
+// 按出库单号分组
+function getOutboundOrders(){
+  const groups={};
+  for(const r of state.outbound_records){
+    const key=r.order_id||('__no_order__'+r.id);
+    if(!groups[key]) groups[key]={order_id:r.order_id,warehouse:r.warehouse,date:r.outbound_date,records:[],total:0};
+    groups[key].records.push(r);
+    groups[key].total+=r.quantity;
+  }
+  // 按日期降序 + 同日期按最新记录ID降序（最近操作的排最前）
+  const sorted=Object.values(groups).sort((a,b)=>{
+    if(a.date!==b.date) return b.date>a.date?1:-1;
+    const aMaxId=Math.max(...a.records.map(r=>r.id));
+    const bMaxId=Math.max(...b.records.map(r=>r.id));
+    return bMaxId-aMaxId;
+  });
+  return sorted;
+}
+// ====================== 查询函数 ======================
+function getStock(warehouse){
+  return state.products.map(p=>{
+    let batches=state.stock_batches.filter(b=>b.product_id===p.id && b.remaining>0);
+    if(warehouse) batches=batches.filter(b=>b.warehouse===warehouse);
+    const total=batches.reduce((s,b)=>s+b.remaining,0);
+    return {id:p.id,name:p.name,unit:p.unit,spec:p.spec,total,batch_count:batches.length};
+  });
+}
+function getStockCombined(){
+  const warehouses=getWarehouses();
+  return state.products.map(p=>{
+    const item={id:p.id,name:p.name,unit:p.unit,spec:p.spec,warehouses:{},total:0};
+    for(const wh of warehouses){
+      const q=state.stock_batches.filter(b=>b.product_id===p.id && b.warehouse===wh && b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+      item.warehouses[wh]=q; item.total+=q;
+    }
+    return item;
+  });
+}
+function getBatches(productId, warehouse){
+  let bs=state.stock_batches.filter(b=>b.product_id===productId);
+  if(warehouse) bs=bs.filter(b=>b.warehouse===warehouse);
+  return bs.sort(fifoSort);
+}
+function getOutboundHistory(productId, warehouse, start, end){
+  let rs=state.outbound_records.slice();
+  if(productId) rs=rs.filter(r=>r.product_id===productId);
+  if(warehouse) rs=rs.filter(r=>r.warehouse===warehouse);
+  if(start) rs=rs.filter(r=>r.outbound_date>=start);
+  if(end) rs=rs.filter(r=>r.outbound_date<=end);
+  return rs.sort((a,b)=> a.outbound_date===b.outbound_date ? a.id-b.id : (a.outbound_date<b.outbound_date?-1:1));
+}
+function getOutboundDetail(outboundId){
+  return state.outbound_details.filter(d=>d.outbound_id===outboundId)
+    .map(d=>{ const b=state.stock_batches.find(x=>x.id===d.batch_id); return {batch_id:d.batch_id,warehouse:b?b.warehouse:'',batch_date:b?b.batch_date:'',production_date:b?b.production_date:'',quantity:d.quantity}; })
+    .sort((a,b)=> fifoSort(a,b));
+}
+
+// ====================== 弹窗 ======================
+function openModal(title, html){ document.getElementById('modal-title').textContent=title; document.getElementById('modal-body').innerHTML=html; document.getElementById('modal').classList.add('show'); }
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+function customConfirm(title, html){
+  return new Promise(resolve=>{
+    openModal(title, html+'<div style="display:flex;gap:10px;margin-top:16px;"><button class="btn btn-outline btn-block" onclick="__cf(false)">取消</button><button class="btn btn-warn btn-block" onclick="__cf(true)">仍要出库</button></div>');
+    window.__cf=ok=>{ closeModal(); resolve(ok); };
+  });
+}
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ====================== 页面切换 ======================
+function switchTab(tab){
+  if(IS_READONLY && (tab==='inbound'||tab==='outbound'||tab==='more')){
+    toast('只读版不能操作，如需入库/出库请联系管理员');
+    return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelector('.nav-item[data-tab="'+tab+'"]').classList.add('active');
+  window.scrollTo(0,0);
+  const renderers={dashboard:renderDashboard,stock:renderStock,inbound:renderInbound,outbound:renderOutbound,more:renderMore};
+  renderers[tab]();
+}
+
+// ====================== 看板页 ======================
+let showAllOrders=false;
+function toggleAllOrders(){ showAllOrders=!showAllOrders; renderDashboard(); }
+function renderDashboard(){
+  const warehouses=getWarehouses();
+  const combined=getStockCombined();
+  const totalStock=combined.reduce((s,i)=>s+i.total,0);
+  const wwStock=combined.reduce((s,i)=>s+(i.warehouses['万纬仓']||0),0);
+  const hbStock=combined.reduce((s,i)=>s+(i.warehouses['翰溥仓']||0),0);
+  const obCount=state.outbound_records.length;
+
+  let html='';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat-box blue" onclick="switchTab(\'stock\')"><div class="sb-label">商品种类</div><div class="sb-value">'+state.products.length+'</div><div class="sb-sub">个在管商品</div></div>';
+  html+='<div class="stat-box green" onclick="switchTab(\'stock\')"><div class="sb-label">总库存</div><div class="sb-value">'+fmt(totalStock)+'</div><div class="sb-sub">件</div></div>';
+  html+='<div class="stat-box purple" onclick="switchTab(\'stock\')"><div class="sb-label">万纬仓</div><div class="sb-value">'+fmt(wwStock)+'</div><div class="sb-sub">件</div></div>';
+  html+='<div class="stat-box red" onclick="switchTab(\'stock\')"><div class="sb-label">翰溥仓</div><div class="sb-value">'+fmt(hbStock)+'</div><div class="sb-sub">件</div></div>';
+  html+='</div>';
+
+  // 辣酱原酱比例监控
+  html+='<div class="card"><h3>辣酱:原酱 比例监控 <span class="sub">标准 1:3.5</span></h3>';
+  const allWhs=warehouses.concat(['__ALL__']);
+  for(const wh of allWhs){
+    const isAll=wh==='__ALL__';
+    const la=state.stock_batches.filter(b=>(isAll||b.warehouse===wh) && getProductName(b.product_id)==='新雅轩辣酱' && b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+    const yuan=state.stock_batches.filter(b=>(isAll||b.warehouse===wh) && getProductName(b.product_id)==='新雅轩原酱' && b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+    html+=renderRatioCard(isAll?'全仓合计':wh, la, yuan, isAll);
+  }
+  html+='</div>';
+
+  // 各商品库存分布
+  html+='<div class="card"><h3>各商品库存分布</h3>';
+  for(const item of combined){
+    if(item.total<=0 && warehouses.every(w=>(item.warehouses[w]||0)<=0)) continue;
+    const ww=item.warehouses['万纬仓']||0, hb=item.warehouses['翰溥仓']||0;
+    const maxW=Math.max(ww,hb,1);
+    const wwPct=Math.round(ww/maxW*100), hbPct=Math.round(hb/maxW*100);
+    html+='<div class="chart-row">';
+    html+='<div class="cr-name" onclick="openBatches('+item.id+')">'+esc(item.name)+'</div>';
+    html+='<div class="cr-bar"><div class="cr-ww" style="width:'+wwPct+'%" title="万纬'+fmt(ww)+'"></div><div class="cr-hb" style="width:'+hbPct+'%" title="翰溥'+fmt(hb)+'"></div></div>';
+    html+='<div class="cr-total">'+fmt(item.total)+'</div>';
+    html+='</div>';
+  }
+  html+='<div class="legend"><span><span class="lg-dot" style="background:var(--blue)"></span>万纬仓</span><span><span class="lg-dot" style="background:var(--red)"></span>翰溥仓</span></div>';
+  html+='</div>';
+
+  // 近期入库
+  const inboundBatches=state.stock_batches.filter(b=>b.batch_type==='inbound').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const ibCount=inboundBatches.length;
+  html+='<div class="card"><h3>入库记录 <span class="sub">'+ibCount+' 笔</span></h3>';
+  if(ibCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">暂无入库记录</div></div>'; }
+  else{
+    const recent=inboundBatches.slice(0,10);
+    for(const b of recent){ html+=renderInboundItem(b); }
+    if(ibCount>10) html+='<div style="text-align:center;font-size:12px;color:var(--text-lighter);margin-top:4px">还有 '+((ibCount-10))+' 笔</div>';
+  }
+  html+='</div>';
+
+  // 近期出库（按出库单分组展示）
+  const orders=getOutboundOrders();
+  const orderCount=orders.length;
+  html+='<div class="card"><h3>出库记录 <span class="sub">'+obCount+' 笔 / '+orderCount+' 单</span></h3>';
+  if(obCount===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">暂无出库记录</div></div>'; }
+  else{
+    const displayOrders = showAllOrders ? orders : orders.slice(0,5);
+    for(const o of displayOrders){ html+=renderOutboundOrderCard(o); }
+    if(orderCount>5){
+      if(showAllOrders){
+        html+='<div style="text-align:center;margin-top:8px"><span class="filter-tab" style="display:inline-block;min-width:auto" onclick="toggleAllOrders()">收起</span></div>';
+      } else {
+        html+='<div style="text-align:center;margin-top:8px"><span class="filter-tab" style="display:inline-block;min-width:auto" onclick="toggleAllOrders()">展开全部 '+orderCount+' 单</span></div>';
+      }
+    }
+  }
+  html+='</div>';
+
+  document.getElementById('page-dashboard').innerHTML=html;
+}
+function renderRatioCard(name, la, yuan, isAll){
+  const total=la+yuan;
+  let statusClass='normal', statusText='正常', detail='';
+  if(la===0 && yuan===0){ statusText='无库存'; statusClass='normal'; detail='辣酱与原酱均无库存。'; }
+  else if(la===0){ statusClass='no_la'; statusText='缺辣酱'; detail='仅有原酱 '+fmt(yuan)+' 件，辣酱已耗尽，请尽快补货辣酱。'; }
+  else{
+    const laRatio=la/total, targetLa=1/(1+TARGET_RATIO);
+    const diff=(laRatio-targetLa)/targetLa;
+    const actualRatio=(yuan/la);
+    if(Math.abs(diff)<=0.10){ statusClass='normal'; statusText='正常'; }
+    else if(diff>0){ statusClass='la_excess'; statusText='辣酱偏多'; }
+    else{ statusClass='yuan_excess'; statusText='原酱偏多'; }
+    const needLa=yuan/TARGET_RATIO;
+    if(needLa>la){ detail='当前 '+fmt(la)+' : '+fmt(yuan)+' = 1 : '+actualRatio.toFixed(2)+'，原酱偏多，需补辣酱 <span class="pos">'+fmt(Math.ceil(needLa-la))+'</span> 件达标准。'; }
+    else if(needLa<la){ detail='当前 '+fmt(la)+' : '+fmt(yuan)+' = 1 : '+actualRatio.toFixed(2)+'，辣酱偏多，需消耗/调出辣酱 <span class="neg">'+fmt(Math.ceil(la-needLa))+'</span> 件达标准。'; }
+    else{ detail='当前 '+'1 : '+actualRatio.toFixed(2)+'，比例标准。'; }
+  }
+  const laPct=total>0?Math.round(la/total*100):0, yuanPct=total>0?100-laPct:0;
+  let h='<div class="ratio-card'+(isAll?' total':'')+'">';
+  h+='<div class="ratio-card-head"><span class="wh-name">'+esc(name)+'</span><span class="ratio-status '+statusClass+'">'+statusText+'</span></div>';
+  h+='<div class="ratio-numbers"><div class="ratio-number"><div class="num la">'+fmt(la)+'</div><div class="lbl">辣酱</div></div><div class="ratio-number"><div class="num yuan">'+fmt(yuan)+'</div><div class="lbl">原酱</div></div></div>';
+  h+='<div class="ratio-bar"><div class="bar-la" style="width:'+laPct+'%">'+(laPct>=12?fmt(laPct)+'%':'')+'</div><div class="bar-yuan" style="width:'+yuanPct+'%">'+(yuanPct>=12?fmt(yuanPct)+'%':'')+'</div></div>';
+  h+='<div class="ratio-ref"></div>';
+  h+='<div class="ratio-detail">'+detail+'</div>';
+  h+='</div>';
+  return h;
+}
+
+// ====================== 库存页 ======================
+let stockFilter='all';
+let stockSearch='';
+function renderStock(){
+  const warehouses=getWarehouses();
+  let html='<div class="filter-tabs">';
+  html+='<div class="filter-tab '+(stockFilter==='all'?'active':'')+'" onclick="setStockFilter(\'all\')">全部</div>';
+  for(const wh of warehouses){ html+='<div class="filter-tab '+(stockFilter===wh?'active':'')+'" onclick="setStockFilter(\''+esc(wh)+'\')">'+esc(wh)+'</div>'; }
+  html+='</div>';
+  html+='<div class="search-box"><input type="text" placeholder="搜索商品..." value="'+esc(stockSearch)+'" oninput="stockSearch=this.value;renderStock()"></div>';
+
+  const combined=getStockCombined();
+  let items=combined.filter(i=> i.name.includes(stockSearch));
+  if(stockFilter!=='all'){
+    // 单仓筛选：只显示该仓有库存的商品，且数量显示该仓库存
+    items=items.filter(i=>(i.warehouses[stockFilter]||0)>0);
+  }
+
+  if(items.length===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">未找到匹配商品</div></div>'; }
+  for(const item of items){
+    const ww=item.warehouses['万纬仓']||0, hb=item.warehouses['翰溥仓']||0;
+    const displayTotal = stockFilter==='all' ? item.total : (item.warehouses[stockFilter]||0);
+    const wwPct=item.total>0?Math.round(ww/item.total*100):0, hbPct=item.total>0?Math.round(hb/item.total*100):0;
+    html+='<div class="stock-item" onclick="openBatches('+item.id+(stockFilter!=='all'?",'"+esc(stockFilter)+"'":'')+')">';
+    html+='<div class="stock-item-head"><span class="stock-item-name">'+esc(item.name)+'</span><span class="stock-item-total">'+fmt(displayTotal)+'</span></div>';
+    html+='<div class="stock-item-wh">';
+    if(stockFilter==='all' || stockFilter==='万纬仓'){ if(warehouses.includes('万纬仓')) html+='<span><span class="dot-ww"></span>万纬 '+fmt(ww)+'</span>'; }
+    if(stockFilter==='all' || stockFilter==='翰溥仓'){ if(warehouses.includes('翰溥仓')) html+='<span><span class="dot-hb"></span>翰溥 '+fmt(hb)+'</span>'; }
+    html+='</div>';
+    if(stockFilter==='all' && item.total>0){
+      html+='<div class="progress" style="margin-top:7px"><div class="progress-bar"><div class="progress-fill" style="width:'+wwPct+'%;background:var(--blue)"></div></div><div class="progress-text">万纬'+wwPct+'%</div></div>';
+    }
+    html+='</div>';
+  }
+  document.getElementById('page-stock').innerHTML=html;
+}
+function setStockFilter(f){ stockFilter=f; renderStock(); }
+function openBatches(productId, warehouse){
+  const p=getProduct(productId);
+  let batches=getBatches(productId, warehouse);
+  let title=p.name+(warehouse?(' · '+warehouse):'')+' 批次明细';
+  let html='';
+  if(batches.length===0){ html+='<div class="empty-state"><div class="es-icon">无</div><div class="es-text">暂无批次</div></div>'; }
+  else{
+    const totalRem=batches.reduce((s,b)=>s+b.remaining,0);
+    const totalQty=batches.reduce((s,b)=>s+b.quantity,0);
+    html+='<div class="info-line"><span class="il-label">批次总数</span><span class="il-value">'+batches.length+'</span></div>';
+    html+='<div class="info-line"><span class="il-label">总入库量</span><span class="il-value">'+fmt(totalQty)+'</span></div>';
+    html+='<div class="info-line"><span class="il-label">总剩余量</span><span class="il-value">'+fmt(totalRem)+'</span></div>';
+    html+='<div style="height:10px"></div>';
+    for(const b of batches){
+      const pct=b.quantity>0?Math.round(b.remaining/b.quantity*100):0;
+      const color=pct>50?'var(--green)':(pct>0?'var(--orange)':'var(--red)');
+      const bt=b.batch_type==='initial'?'<span class="tag tag-init">初期</span>':'<span class="tag tag-inbound">入库</span>';
+      const whTag=b.warehouse==='万纬仓'?'<span class="tag tag-ww">万纬</span>':(b.warehouse==='翰溥仓'?'<span class="tag tag-hb">翰溥</span>':'');
+      html+='<div class="batch-item'+(b.warehouse==='翰溥仓'?' hb':'')+'">';
+      html+='<div class="batch-item-head"><span class="batch-item-date">入库 '+esc(b.batch_date)+'</span><span class="batch-item-qty">剩 '+fmt(b.remaining)+'/'+fmt(b.quantity)+'</span></div>';
+      html+='<div class="batch-item-meta">生产 '+esc(b.production_date||b.batch_date)+' ｜ '+whTag+' '+bt+'</div>';
+      html+='<div class="progress" style="margin-top:5px"><div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+color+'"></div></div><div class="progress-text" style="color:'+color+'">'+pct+'%</div></div>';
+      html+='</div>';
+    }
+  }
+  openModal(title, html);
+}
+
+// ====================== 入库页 ======================
+let inboundMulti=false;
+function renderInbound(){
+  const warehouses=getWarehouses();
+  let html='<div class="warn-box">入库后会自动生成新批次，按生产日期参与 FIFO 先进先出。龙兴米粉视作米粉。</div>';
+  html+='<div class="card">';
+  html+='<div class="form-group"><label class="form-label">商品 <span class="req">*</span></label><select class="form-select" id="in-prod">'+productOptions()+'</select></div>';
+  html+='<div class="form-row"><div class="form-group"><label class="form-label">仓库 <span class="req">*</span></label><select class="form-select" id="in-wh">';
+  for(const w of warehouses){ html+='<option value="'+esc(w)+'">'+esc(w)+'</option>'; }
+  html+='</select></div><div class="form-group"><label class="form-label">入库日期 <span class="req">*</span></label><input type="date" class="form-input" id="in-date" value="'+todayStr()+'"></div></div>';
+  html+='<div class="form-group"><label class="form-label">生产日期 <span class="req" style="color:var(--text-lighter)">(可选，默认=入库日期)</span></label><input type="date" class="form-input" id="in-prod-date" placeholder="不填则=入库日期"></div>';
+  // 多生产日期切换
+  html+='<div class="form-group"><label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">一次入库含多个生产日期？<span id="in-multi-toggle" class="filter-tab '+(inboundMulti?'active':'')+'" style="margin:0;min-width:54px" onclick="toggleInboundMulti()">'+(inboundMulti?'是':'否')+'</span></label></div>';
+  html+='<div id="in-single"'+(inboundMulti?' class="hidden"':'')+'>';
+  html+='<div class="form-row"><div class="form-group"><label class="form-label">数量 <span class="req">*</span></label><input type="number" class="form-input" id="in-qty" inputmode="decimal" placeholder="件数"></div><div class="form-group"><label class="form-label">备注</label><input type="text" class="form-input" id="in-remark" placeholder="可选"></div></div>';
+  html+='</div>';
+  html+='<div id="in-multi"'+(inboundMulti?'':' class="hidden"')+'>';
+  html+='<div id="in-multi-rows"></div>';
+  html+='<button class="btn btn-outline btn-block btn-sm" onclick="addInboundMultiRow()">＋ 添加生产日期</button>';
+  html+='</div>';
+  html+='<button class="btn btn-success btn-block" style="margin-top:6px" onclick="doInbound()">确认入库</button>';
+  html+='</div>';
+  document.getElementById('page-inbound').innerHTML=html;
+  if(inboundMulti) addInboundMultiRow();
+}
+function productOptions(selectedId){
+  let html='';
+  for(const p of state.products){ html+='<option value="'+p.id+'"'+(selectedId&&selectedId===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }
+  return html;
+}
+function toggleInboundMulti(){ inboundMulti=!inboundMulti; renderInbound(); }
+function addInboundMultiRow(prodDate, qty){
+  const rows=document.getElementById('in-multi-rows');
+  const div=document.createElement('div');
+  div.className='multi-row';
+  div.innerHTML='<div class="mr-head"><span>生产日期 + 数量</span><span class="mr-del" onclick="this.parentNode.parentNode.remove()">×</span></div><div class="form-row"><div class="form-group"><input type="date" class="form-input mr-pdate" value="'+(prodDate||'')+'"></div><div class="form-group"><input type="number" class="form-input mr-qty" inputmode="decimal" placeholder="数量" value="'+(qty||'')+'"></div></div>';
+  rows.appendChild(div);
+}
+function doInbound(){
+  const pid=parseInt(document.getElementById('in-prod').value);
+  const wh=document.getElementById('in-wh').value;
+  const date=document.getElementById('in-date').value;
+  const pdate=document.getElementById('in-prod-date').value;
+  const remark=document.getElementById('in-remark').value;
+  if(!pid||!wh||!date){ toast('请填写仓库和日期'); return; }
+  if(!inboundMulti){
+    const qty=parseFloat(document.getElementById('in-qty').value);
+    if(!qty||qty<=0){ toast('请输入有效数量'); return; }
+    addInbound(pid, qty, date, wh, pdate, 'inbound', remark);
+    toast('入库成功：'+getProductName(pid)+' '+fmt(qty)+' 件');
+  } else {
+    const rows=document.querySelectorAll('#in-multi-rows .multi-row');
+    const details=[]; let total=0;
+    for(const r of rows){
+      const pd=r.querySelector('.mr-pdate').value;
+      const q=parseFloat(r.querySelector('.mr-qty').value);
+      if(!pd||!q||q<=0){ toast('请完整填写每个生产日期和数量'); return; }
+      details.push({prodDate:pd,qty:q}); total+=q;
+    }
+    if(details.length===0){ toast('请至少添加一个生产日期'); return; }
+    addInboundMulti(pid, date, wh, details, 'inbound', remark);
+    toast('入库成功：'+getProductName(pid)+' 共 '+fmt(total)+' 件（'+details.length+'个生产批次）');
+  }
+  renderInbound();
+}
+
+// ====================== 出库页 ======================
+function renderOutbound(){
+  const warehouses=getWarehouses();
+  let html='<div class="warn-box">出库按【生产日期最早优先】的 FIFO 规则自动扣减。若从某仓出库会触及较新批次（其他仓有更老货未出），会弹出跨仓 FIFO 提醒。</div>';
+  html+='<div class="card">';
+  html+='<div class="form-group"><label class="form-label">商品 <span class="req">*</span></label><select class="form-select" id="out-prod">'+productOptions()+'</select></div>';
+  html+='<div class="form-row"><div class="form-group"><label class="form-label">仓库 <span class="req">*</span></label><select class="form-select" id="out-wh">';
+  for(const w of warehouses){ html+='<option value="'+esc(w)+'">'+esc(w)+'</option>'; }
+  html+='</select></div><div class="form-group"><label class="form-label">出库日期 <span class="req">*</span></label><input type="date" class="form-input" id="out-date" value="'+todayStr()+'"></div></div>';
+  const suggestedOrderId=genOrderId(OUTBOUND_KEYWORDS[0]);
+  html+='<div class="form-row"><div class="form-group"><label class="form-label">出库类型 <span style="color:var(--text-lighter);font-weight:normal">(配送目的地)</span></label><select class="form-select" id="out-keyword" onchange="updateOrderId()">';
+  for(const kw of OUTBOUND_KEYWORDS){ html+='<option value="'+esc(kw)+'">'+esc(kw)+'</option>'; }
+  html+='<option value="">自定义...</option>';
+  html+='</select></div><div class="form-group"><label class="form-label">出库单号</label><input type="text" class="form-input" id="out-order-id" value="'+suggestedOrderId+'" readonly style="background:#f5f5f5"></div></div>';
+  html+='<div class="form-row"><div class="form-group"><label class="form-label">数量 <span class="req">*</span></label><input type="number" class="form-input" id="out-qty" inputmode="decimal" placeholder="件数" oninput="previewFifo()"></div><div class="form-group"><label class="form-label">备注</label><input type="text" class="form-input" id="out-remark" placeholder="可选"></div></div>';
+  html+='<div id="out-preview" style="margin:4px 0 10px"></div>';
+  html+='<button class="btn btn-danger btn-block" onclick="doOutbound()">确认出库</button>';
+  html+='</div>';
+  document.getElementById('page-outbound').innerHTML=html;
+}
+function previewFifo(){
+  const pid=parseInt(document.getElementById('out-prod').value);
+  const wh=document.getElementById('out-wh').value;
+  const qty=parseFloat(document.getElementById('out-qty').value);
+  const box=document.getElementById('out-preview');
+  if(!pid||!qty||qty<=0){ box.innerHTML=''; return; }
+  const avail=state.stock_batches.filter(b=>b.product_id===pid && b.warehouse===wh && b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+  const check=checkFifoViolation(pid, qty, wh);
+  let h='<div class="info-line"><span class="il-label">'+esc(wh)+'可用库存</span><span class="il-value">'+fmt(avail)+'</span></div>';
+  if(check.type==='insufficient'){ h+='<div class="info-line"><span class="il-label">本次出库</span><span class="il-value" style="color:var(--red)">'+fmt(qty)+' （库存不足！）</span></div>'; }
+  else if(check.violated){ h+='<div class="info-line"><span class="il-label">FIFO 提醒</span><span class="il-value" style="color:var(--orange)">跨仓越级</span></div>'; }
+  else{ h+='<div class="info-line"><span class="il-label">FIFO 校验</span><span class="il-value" style="color:var(--green)">正常</span></div>'; }
+  box.innerHTML=h;
+}
+
+function updateOrderId(){
+  const kw=document.getElementById('out-keyword').value;
+  const input=document.getElementById('out-order-id');
+  if(kw){
+    input.value=genOrderId(kw);
+    input.readOnly=true;
+    input.style.background='#f5f5f5';
+  } else {
+    input.value='';
+    input.readOnly=false;
+    input.style.background='#fff';
+    input.placeholder='输入出库单号关键词';
+  }
+}
+async function doOutbound(){
+  const pid=parseInt(document.getElementById('out-prod').value);
+  const wh=document.getElementById('out-wh').value;
+  const date=document.getElementById('out-date').value;
+  const qty=parseFloat(document.getElementById('out-qty').value);
+  const remark=document.getElementById('out-remark').value;
+  if(!pid||!wh||!date||!qty||qty<=0){ toast('请完整填写出库信息'); return; }
+  const check=checkFifoViolation(pid, qty, wh);
+  if(check.type==='insufficient'){ toast(''+check.msg); return; }
+  if(check.violated){
+    const msg=fifoWarnHtml(check.msg);
+    const ok=await customConfirm('跨仓 FIFO 提醒', msg);
+    if(!ok) return;
+  }
+  const orderId=document.getElementById('out-order-id')?.value||'';
+  const res=addOutbound(pid, qty, date, wh, remark, orderId);
+  if(!res.success){ toast(''+res.message); return; }
+  let toastMsg='出库成功：'+getProductName(pid)+' '+fmt(qty)+' 件';
+  if(orderId) toastMsg+=' ('+orderId+')';
+  toast(toastMsg);
+  renderOutbound();
+}
+function fifoWarnHtml(msg){
+  if(typeof msg==='string') return '<p>'+esc(msg)+'</p>';
+  let h='<p style="font-size:13px;line-height:1.6">本次从 <b>'+esc(msg.warehouse)+'</b> 出库 <b>'+fmt(msg.qty)+'</b> 件，将触及较新批次：</p>';
+  h+='<div style="margin:8px 0">';
+  for(const b of msg.overBatches){ h+='<div class="batch-item'+(b.warehouse==='翰溥仓'?' hb':'')+'"><div class="batch-item-head"><span class="batch-item-date">批次#'+b.id+' 生产 '+esc(b.production_date)+'</span><span class="batch-item-qty" style="color:var(--orange)">越级 '+fmt(msg.overConsumed[b.id])+'</span></div><div class="batch-item-meta">'+esc(b.warehouse)+'</div></div>'; }
+  h+='</div>';
+  if(msg.otherOld.length){
+    h+='<p style="font-size:13px;line-height:1.6">但其他仓库仍有较老批次未出完：</p><div style="margin:8px 0">';
+    for(const o of msg.otherOld){ h+='<div class="batch-item'+(o.warehouse==='翰溥仓'?' hb':'')+'"><div class="batch-item-head"><span class="batch-item-date">批次#'+o.batch_id+' 生产 '+esc(o.production_date)+'</span><span class="batch-item-qty">剩 '+fmt(o.remaining)+'</span></div><div class="batch-item-meta">'+esc(o.warehouse)+' ｜ 应优先消耗 '+fmt(o.should_consume)+'</div></div>'; }
+    h+='</div>';
+    h+='<p style="font-size:13px;color:var(--text-light)">按总库存先进先出原则，建议优先从其他仓库调配较老批次。</p>';
+  }
+  return h;
+}
+
+
+// ====================== 出库单卡片渲染 ======================
+function renderOutboundOrderCard(o){
+  const d=o.date.split('-');
+  const whTag=o.warehouse==='万纬仓'?'<span class="tag tag-ww">万纬</span>':(o.warehouse==='翰溥仓'?'<span class="tag tag-hb">翰溥</span>':'');
+  const parsed=parseOrderId(o.order_id);
+  const isTransfer=parsed.keyword==='调拨';
+  let h='<div class="order-card" data-order-id="'+esc(o.order_id||'')+'" onclick="openOutboundOrderDetail(this.dataset.orderId)">';
+  h+='<div class="order-card-head">';
+  if(o.order_id){ h+='<span class="order-card-id">'+esc(parsed.keyword)+(parsed.group?' '+parsed.group:'')+'</span>'; }
+  else{ h+='<span class="order-card-id" style="background:#f5f5f5;color:var(--text-lighter)">单条出库</span>'; }
+  // 调拨单显示方向：万纬→翰溥 或 翰溥→万纬
+  if(isTransfer && o.order_id){
+    const transferIn=state.stock_batches.filter(b=>b.batch_type==='transfer'&&b.remark===o.order_id);
+    const targetWh=transferIn.length>0?transferIn[0].warehouse:'';
+    const direction=esc(o.warehouse)+'→'+esc(targetWh);
+    h+='<span class="order-card-info" style="color:var(--purple);font-weight:600">'+direction+' '+parseInt(d[1])+'月'+parseInt(d[2])+'日-'+parsed.seq+'</span>';
+  } else {
+    h+='<span class="order-card-info">'+whTag+' '+parseInt(d[1])+'月'+parseInt(d[2])+'日-'+parsed.seq+(parsed.group?' '+parsed.group:'')+'</span>';
+  }
+  h+='</div>';
+  // 调拨单显示双向数量
+  if(isTransfer && o.order_id){
+    const transferIn=state.stock_batches.filter(b=>b.batch_type==='transfer'&&b.remark===o.order_id);
+    const inTotal=transferIn.reduce((s,b)=>s+b.quantity,0);
+    h+='<div class="order-card-total"><span style="color:var(--red)">-'+fmt(o.total)+'</span> <span style="color:var(--text-light);font-size:13px;font-weight:400">件 →</span> <span style="color:var(--green)">+'+fmt(inTotal)+'</span> <span style="color:var(--text-light);font-size:13px;font-weight:400">件</span></div>';
+  } else {
+    h+='<div class="order-card-total">-'+fmt(o.total)+' 件</div>';
+  }
+  h+='<div class="order-card-items">';
+  for(const r of o.records){
+    h+='<div class="order-item-row"><span class="order-item-name">'+esc(getProductName(r.product_id))+'</span><span class="order-item-qty">-'+fmt(r.quantity)+'件</span></div>';
+    // 调拨单同时显示入库数量
+    if(isTransfer && o.order_id){
+      const transferInForProduct=state.stock_batches.filter(b=>b.batch_type==='transfer'&&b.remark===o.order_id&&b.product_id===r.product_id);
+      const inQty=transferInForProduct.reduce((s,b)=>s+b.quantity,0);
+      if(inQty>0) h+='<div class="order-item-row" style="color:var(--green)"><span class="order-item-name">'+esc(getProductName(r.product_id))+'</span><span class="order-item-qty">+'+fmt(inQty)+'件</span></div>';
+    }
+  }
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+function openOutboundOrderDetail(orderId){
+  const records=state.outbound_records.filter(r=>r.order_id===orderId);
+  if(records.length===0){ toast('未找到出库单'); return; }
+  const o=records[0];
+  const totalQty=records.reduce((s,r)=>s+r.quantity,0);
+  const parsed=parseOrderId(orderId);
+  const isTransfer=parsed.keyword==='调拨';
+  const whTag=o.warehouse==='万纬仓'?'万纬仓':(o.warehouse==='翰溥仓'?'翰溥仓':'');
+  let html='<div class="info-line"><span class="il-label">出库单号</span><span class="il-value" style="color:var(--primary)">'+esc(orderId)+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">出库日期</span><span class="il-value">'+esc(o.outbound_date)+'</span></div>';
+  if(isTransfer){
+    // 调拨单显示方向
+    const transferIn=state.stock_batches.filter(b=>b.batch_type==='transfer'&&b.remark===orderId);
+    const targetWh=transferIn.length>0?transferIn[0].warehouse:'';
+    const direction=esc(o.warehouse)+' → '+esc(targetWh);
+    html+='<div class="info-line"><span class="il-label">调拨方向</span><span class="il-value" style="color:var(--purple);font-weight:600">'+direction+'</span></div>';
+    html+='<div class="info-line"><span class="il-label">出库数量</span><span class="il-value" style="color:var(--red)">-'+fmt(totalQty)+' 件（'+records.length+' 种）</span></div>';
+    const inTotal=transferIn.reduce((s,b)=>s+b.quantity,0);
+    html+='<div class="info-line"><span class="il-label">入库数量</span><span class="il-value" style="color:var(--green)">+'+fmt(inTotal)+' 件（'+transferIn.length+' 个批次）</span></div>';
+    html+='<div style="height:12px"></div>';
+    html+='<table class="modal-table"><thead><tr><th>商品</th><th>出库</th><th>入库</th><th>生产日期</th></tr></thead><tbody>';
+    for(const r of records){
+      const details=getOutboundDetail(r.id);
+      const detailStr=details.map(d=>d.production_date+'-'+fmt(d.quantity)).join('，');
+      const tIn=state.stock_batches.filter(b=>b.batch_type==='transfer'&&b.remark===orderId&&b.product_id===r.product_id);
+      const inStr=tIn.map(b=>b.production_date+'-'+fmt(b.quantity)).join('，');
+      html+='<tr><td>'+esc(getProductName(r.product_id))+'</td><td style="color:var(--red)">-'+fmt(r.quantity)+'</td><td style="color:var(--green)">+'+fmt(tIn.reduce((s,b)=>s+b.quantity,0))+'</td><td style="font-size:11px;color:var(--text-light)">'+esc(detailStr)+'</td></tr>';
+    }
+    html+='</tbody></table>';
+    openModal('调拨单 '+parsed.seq+' ('+esc(orderId)+')', html);
+  } else {
+    html+='<div class="info-line"><span class="il-label">仓库</span><span class="il-value">'+esc(whTag)+'</span></div>';
+    html+='<div class="info-line"><span class="il-label">商品数</span><span class="il-value">'+records.length+' 种</span></div>';
+    html+='<div class="info-line"><span class="il-label">总数量</span><span class="il-value" style="color:var(--red)">-'+fmt(totalQty)+' 件</span></div>';
+    html+='<div style="height:12px"></div>';
+    html+='<table class="modal-table"><thead><tr><th>商品</th><th>数量</th><th>批次明细</th></tr></thead><tbody>';
+    for(const r of records){
+      const details=getOutboundDetail(r.id);
+      const detailStr=details.map(d=>'#'+d.batch_id+'('+d.production_date+')-'+fmt(d.quantity)).join('，');
+      html+='<tr><td>'+esc(getProductName(r.product_id))+'</td><td style="color:var(--red)">-'+fmt(r.quantity)+'</td><td style="font-size:11px;color:var(--text-light)">'+esc(detailStr)+'</td></tr>';
+    }
+    html+='</tbody></table>';
+    openModal('出库单 '+esc(parsed.keyword)+' '+parsed.seq+' ('+esc(orderId)+')', html);
+  }
+}
+
+// ====================== 出库记录时间线 ======================
+function renderInboundItem(b){
+  const d=b.batch_date.split('-');
+  const whTag=b.warehouse==='万纬仓'?'<span class="tag tag-ww">万纬</span>':(b.warehouse==='翰溥仓'?'<span class="tag tag-hb">翰溥</span>':'');
+  const bTag='<span class="tag tag-inbound">入库</span>';
+  const pName=getProductName(b.product_id);
+  let h='<div class="outbound-item">';
+  h+='<div class="oi-date"><div class="oi-day">'+parseInt(d[2])+'</div><div class="oi-month">'+parseInt(d[1])+'月</div></div>';
+  h+='<div class="oi-divider"></div>';
+  h+='<div class="oi-info"><div class="oi-product">'+esc(pName)+'</div><div class="oi-meta">'+whTag+' '+bTag+' 生产'+esc(b.production_date)+(b.remark?' '+esc(b.remark):'')+'</div></div>';
+  h+='<div class="oi-qty"><div class="oi-num" style="color:var(--green)">+'+fmt(b.quantity)+'</div></div>';
+  h+='</div>';
+  return h;
+}
+function renderOutboundItem(r){
+  const d=r.outbound_date.split('-');
+  const whTag=r.warehouse==='万纬仓'?'<span class="tag tag-ww">万纬</span>':(r.warehouse==='翰溥仓'?'<span class="tag tag-hb">翰溥</span>':'');
+  let h='<div class="outbound-item" onclick="openOutboundDetail('+r.id+')">';
+  h+='<div class="oi-date"><div class="oi-day">'+parseInt(d[2])+'</div><div class="oi-month">'+parseInt(d[1])+'月</div></div>';
+  h+='<div class="oi-divider"></div>';
+  h+='<div class="oi-info"><div class="oi-product">'+esc(getProductName(r.product_id))+'</div><div class="oi-meta">'+whTag+' '+(r.remark?esc(r.remark):'')+'</div></div>';
+  h+='<div class="oi-qty"><div class="oi-num">-'+fmt(r.quantity)+'</div></div>';
+  h+='</div>';
+  return h;
+}
+function openOutboundDetail(id){
+  const r=state.outbound_records.find(x=>x.id===id);
+  if(!r) return;
+  const details=getOutboundDetail(id);
+  let html='';
+  if(r.order_id){ const parsed=parseOrderId(r.order_id); html+='<div class="info-line"><span class="il-label">出库单号</span><span class="il-value" style="color:var(--primary)">'+esc(parsed.keyword)+' '+parsed.seq+' ('+esc(r.order_id)+')</span></div>'; }
+  html+='<div class="info-line"><span class="il-label">商品</span><span class="il-value">'+esc(getProductName(r.product_id))+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">仓库</span><span class="il-value">'+esc(r.warehouse)+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">出库日期</span><span class="il-value">'+esc(r.outbound_date)+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">总数量</span><span class="il-value" style="color:var(--red)">-'+fmt(r.quantity)+'</span></div>';
+  html+='<div style="height:12px"></div><table class="modal-table"><thead><tr><th>批次</th><th>生产日期</th><th>扣减</th></tr></thead><tbody>';
+  for(const d of details){ html+='<tr><td>#'+(d.batch_id||'-')+'</td><td>'+esc(d.production_date||d.batch_date)+'</td><td>'+fmt(d.quantity)+'</td></tr>'; }
+  html+='</tbody></table>';
+  openModal('出库明细 #'+r.id, html);
+}
+
+// ====================== 更多页 ======================
+function renderMore(){
+  const warehouses=getWarehouses();
+  const wwStock=state.stock_batches.filter(b=>b.warehouse==='万纬仓'&&b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+  const hbStock=state.stock_batches.filter(b=>b.warehouse==='翰溥仓'&&b.remaining>0).reduce((s,b)=>s+b.remaining,0);
+  let html='';
+  html+='<div class="card"><h3>数据概览</h3>';
+  html+='<div class="info-line"><span class="il-label">商品种类</span><span class="il-value">'+state.products.length+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">批次总数</span><span class="il-value">'+state.stock_batches.length+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">出库笔数</span><span class="il-value">'+state.outbound_records.length+' 笔 / '+getOutboundOrders().length+' 单</span></div>';
+  html+='<div class="info-line"><span class="il-label">万纬仓库存</span><span class="il-value">'+fmt(wwStock)+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">翰溥仓库存</span><span class="il-value">'+fmt(hbStock)+'</span></div>';
+  html+='</div>';
+
+  html+='<div class="card"><h3>数据备份与恢复</h3>';
+  html+='<p style="font-size:12px;color:var(--text-light);margin-bottom:10px;line-height:1.6">数据已内嵌在本文件中（由助手维护）。助手每次更新文件后，你重新打开即可看到最新看板，无需手动导入。下方按钮仅用于临时导出/载入当前查看的数据。</p>';
+  html+='<button class="btn btn-primary btn-block" style="margin-bottom:8px" onclick="exportData()">⬇ 导出备份文件（JSON）</button>';
+  html+='<label class="btn btn-outline btn-block" for="import-file" style="display:block;width:100%;text-align:center;box-sizing:border-box;">⬆ 导入备份文件</label>';
+  html+='<input type="file" id="import-file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;" onchange="importData(event)">';
+  html+='</div>';
+
+  html+='<div class="card"><h3>商品管理</h3>';
+  html+='<div class="form-row"><div class="form-group"><input type="text" class="form-input" id="new-prod-name" placeholder="新商品名称"></div><button class="btn btn-success btn-sm" style="height:42px" onclick="addNewProduct()">添加</button></div>';
+  html+='<div style="font-size:12px;color:var(--text-lighter);margin-top:6px">现有 '+state.products.length+' 个商品</div>';
+  html+='</div>';
+
+  html+='<div class="card"><h3>规则与说明</h3>';
+  html+='<div class="info-line"><span class="il-label">仓库</span><span class="il-value">'+(warehouses.join(' / ')||'无')+'</span></div>';
+  html+='<div class="info-line"><span class="il-label">FIFO 规则</span><span class="il-value">生产日期→入库日期→批次ID</span></div>';
+  html+='<div class="info-line"><span class="il-label">辣酱原酱标准</span><span class="il-value">1 : 3.5</span></div>';
+  html+='<div class="info-line"><span class="il-label">商品别名</span><span class="il-value">龙兴米粉=米粉</span></div>';
+  html+='</div>';
+
+  html+='<div class="card danger-zone"><h3 style="color:var(--red)">危险操作</h3>';
+  html+='<button class="btn btn-outline btn-block" onclick="resetToInitial()">恢复初始数据（清空当前改动）</button>';
+  html+='<p style="font-size:11px;color:var(--text-lighter);margin-top:8px;line-height:1.5">仅当数据出错且已导出备份时使用，将丢弃手机端所有改动。</p>';
+  html+='</div>';
+
+  document.getElementById('page-more').innerHTML=html;
+}
+function addNewProduct(){
+  const name=document.getElementById('new-prod-name').value.trim();
+  if(!name){ toast('请输入商品名称'); return; }
+  const norm=normalizeName(name);
+  if(getProductId(norm)){ toast('商品已存在：'+norm); return; }
+  addProduct(norm);
+  toast('已添加商品：'+norm);
+  document.getElementById('new-prod-name').value='';
+  renderMore();
+}
+function exportData(){
+  const data=JSON.stringify(state,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='库存备份_'+todayStr()+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('备份已导出');
+}
+function importData(evt){
+  const file=evt.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(!parsed.products || !parsed.stock_batches){ toast('文件格式不正确'); return; }
+      state=parsed;
+      state.outbound_records=state.outbound_records||[];
+      state.outbound_details=state.outbound_details||[];
+      computeNextIds();
+      saveState();
+      toast('导入成功');
+      switchTab('dashboard');
+    }catch(err){ toast('解析失败：'+err.message); }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+function resetToInitial(){
+  customConfirm('确认恢复初始数据？', '<p style="font-size:13px;line-height:1.6">将丢弃手机端所有入库/出库改动，恢复到打包时的初始库存（'+fmt(INITIAL_DATA.stock_batches.reduce((s,b)=>s+b.remaining,0))+' 件）。请确认已导出备份。</p>').then(ok=>{
+    if(!ok) return;
+    state=JSON.parse(JSON.stringify(INITIAL_DATA));
+    computeNextIds(); saveState();
+    toast('已恢复初始数据');
+    switchTab('dashboard');
+  });
+}
+
+// ====================== 启动 ======================
+loadState();
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+// 显示版本号，方便用户确认是否为最新版
+document.getElementById('data-version-label').textContent=DATA_VERSION+'更新 | '+fmt(state.stock_batches.reduce((s,b)=>s+b.remaining,0))+'件';
+renderDashboard();
+</script>
+</body>
+</html>
