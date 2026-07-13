@@ -192,7 +192,7 @@
       "product_id": 1,
       "batch_date": "2026-07-08",
       "quantity": 7.0,
-      "remaining": 5.0,
+      "remaining": 4.0,
       "batch_type": "initial",
       "remark": "翰溥仓初期库存",
       "created_at": "2026-07-08 16:08:36",
@@ -1336,6 +1336,16 @@
       "remark": "",
       "order_id": "壹米2026071301",
       "created_at": "2026-07-13 14:22:07"
+    },
+    {
+      "id": 87,
+      "product_id": 1,
+      "warehouse": "翰溥仓",
+      "outbound_date": "2026-07-13",
+      "quantity": 1.0,
+      "remark": "",
+      "order_id": "壹米2026071301",
+      "created_at": "2026-07-13 14:22:09"
     }
   ],
   "outbound_details": [
@@ -1874,6 +1884,12 @@
       "id": 89,
       "outbound_id": 86,
       "batch_id": 32,
+      "quantity": 1.0
+    },
+    {
+      "id": 90,
+      "outbound_id": 87,
+      "batch_id": 10,
       "quantity": 1.0
     }
   ],
