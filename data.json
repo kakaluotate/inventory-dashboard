@@ -446,7 +446,7 @@
       "batch_date": "2026-07-10",
       "production_date": "2026-06-22",
       "quantity": 30,
-      "remaining": 22.0,
+      "remaining": 20.0,
       "batch_type": "transfer",
       "remark": "调拨2026071001",
       "created_at": "2026-07-10 08:08:12"
@@ -1556,6 +1556,16 @@
       "remark": "",
       "order_id": "明亨2026071401CD",
       "created_at": "2026-07-14 07:52:08"
+    },
+    {
+      "id": 109,
+      "product_id": 6,
+      "warehouse": "翰溥仓",
+      "outbound_date": "2026-07-14",
+      "quantity": 2.0,
+      "remark": "",
+      "order_id": "明亨2026071401CD",
+      "created_at": "2026-07-14 07:52:10"
     }
   ],
   "outbound_details": [
@@ -2227,6 +2237,12 @@
       "outbound_id": 108,
       "batch_id": 14,
       "quantity": 1.0
+    },
+    {
+      "id": 112,
+      "outbound_id": 109,
+      "batch_id": 37,
+      "quantity": 2.0
     }
   ],
   "next_outbound_record_id": 85,
