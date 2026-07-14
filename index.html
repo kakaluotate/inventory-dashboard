@@ -8,7 +8,20 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>库存看板（只读）</title>
+<meta property="og:title" content="库存实时看板">
+<meta property="og:description" content="万纬仓·翰溥仓 | 双仓库存数据实时同步">
+<meta property="og:image" content="https://kakaluotate.github.io/inventory-dashboard/icon.png">
+<meta property="og:url" content="https://kakaluotate.github.io/inventory-dashboard/">
+<meta property="og:type" content="website">
+<meta property="og:image:width" content="300">
+<meta property="og:image:height" content="300">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="库存实时看板">
+<meta name="twitter:description" content="万纬仓·翰溥仓 | 双仓库存数据实时同步">
+<meta name="twitter:image" content="https://kakaluotate.github.io/inventory-dashboard/icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<title>库存实时看板</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -678,6 +691,27 @@ function renderRatioCard(name, la, yuan, isAll){
   return h;
 }
 
+// ====================== 远程数据拉取 ======================
+function fetchRemoteData(){
+  const dataUrl='https://kakaluotate.github.io/inventory-dashboard/data.json?t='+Date.now();
+  fetch(dataUrl).then(r=>r.json()).then(data=>{
+    if(data && data.products && data.stock_batches){
+      state=data;
+      state.outbound_records=state.outbound_records||[];
+      state.outbound_details=state.outbound_details||[];
+      computeNextIds();
+      const total=state.stock_batches.reduce((s,b)=>s+b.remaining,0);
+      const verEl=document.getElementById('data-version-label');
+      if(verEl) verEl.textContent=DATA_VERSION+'更新 | '+fmt(total)+'件';
+      const activePage=document.querySelector('.page.active');
+      if(activePage){
+        const tab=activePage.id.replace('page-','');
+        const renderers={dashboard:renderDashboard,stock:renderStock};
+        if(renderers[tab]) renderers[tab]();
+      }
+    }
+  }).catch(()=>{});
+}
 // ====================== 库存页 ======================
 let stockFilter='all';
 let stockSearch='';
@@ -1121,6 +1155,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 // 显示版本号，方便用户确认是否为最新版
 document.getElementById('data-version-label').textContent=DATA_VERSION+'更新 | '+fmt(state.stock_batches.reduce((s,b)=>s+b.remaining,0))+'件';
 renderDashboard();
+fetchRemoteData();
 </script>
 </body>
 </html>
