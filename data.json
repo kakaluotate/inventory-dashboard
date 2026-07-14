@@ -132,7 +132,7 @@
       "product_id": 6,
       "batch_date": "2026-07-08",
       "quantity": 66.0,
-      "remaining": 24.0,
+      "remaining": 16.0,
       "batch_type": "initial",
       "remark": "万纬仓初期库存",
       "created_at": "2026-07-08 16:07:19",
@@ -1836,6 +1836,16 @@
       "remark": "",
       "order_id": "明亨2026071401FJ",
       "created_at": "2026-07-14 08:26:46"
+    },
+    {
+      "id": 138,
+      "product_id": 6,
+      "warehouse": "万纬仓",
+      "outbound_date": "2026-07-14",
+      "quantity": 8.0,
+      "remark": "",
+      "order_id": "明亨2026071401FJ",
+      "created_at": "2026-07-14 08:26:49"
     }
   ],
   "outbound_details": [
@@ -2693,6 +2703,12 @@
       "outbound_id": 137,
       "batch_id": 4,
       "quantity": 3.0
+    },
+    {
+      "id": 143,
+      "outbound_id": 138,
+      "batch_id": 5,
+      "quantity": 8.0
     }
   ],
   "next_outbound_record_id": 85,
