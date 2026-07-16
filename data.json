@@ -264,7 +264,7 @@
       "product_id": 7,
       "batch_date": "2026-07-08",
       "quantity": 400.0,
-      "remaining": 214.0,
+      "remaining": 215.0,
       "batch_type": "initial",
       "remark": "翰溥仓初期库存",
       "created_at": "2026-07-08 16:08:36",
@@ -494,7 +494,7 @@
       "batch_date": "2026-07-15",
       "production_date": "2026-07-13",
       "quantity": 400,
-      "remaining": 400,
+      "remaining": 399,
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-16 08:22:00"
@@ -3501,7 +3501,7 @@
     {
       "id": 195,
       "outbound_id": 188,
-      "batch_id": 16,
+      "batch_id": 41,
       "quantity": 1
     }
   ],
