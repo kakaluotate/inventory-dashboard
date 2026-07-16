@@ -228,7 +228,7 @@
       "product_id": 4,
       "batch_date": "2026-07-08",
       "quantity": 88.0,
-      "remaining": 37.0,
+      "remaining": 39.0,
       "batch_type": "initial",
       "remark": "翰溥仓初期库存",
       "created_at": "2026-07-08 16:08:36",
@@ -240,7 +240,7 @@
       "product_id": 5,
       "batch_date": "2026-07-08",
       "quantity": 112.0,
-      "remaining": 74.0,
+      "remaining": 75.0,
       "batch_type": "initial",
       "remark": "翰溥仓初期库存",
       "created_at": "2026-07-08 16:08:36",
@@ -300,7 +300,7 @@
       "product_id": 10,
       "batch_date": "2026-07-07",
       "quantity": 1300.0,
-      "remaining": 911.0,
+      "remaining": 919.0,
       "batch_type": "initial",
       "remark": "翰溥仓初期库存",
       "created_at": "2026-07-08 16:08:36",
@@ -2292,36 +2292,6 @@
       "created_at": "2026-07-15 10:11:06"
     },
     {
-      "id": 181,
-      "product_id": 4,
-      "warehouse": "翰溥仓",
-      "outbound_date": "2026-07-15",
-      "quantity": 2,
-      "remark": "",
-      "order_id": "雨润2026071502",
-      "created_at": "2026-07-16 08:19:48"
-    },
-    {
-      "id": 182,
-      "product_id": 5,
-      "warehouse": "翰溥仓",
-      "outbound_date": "2026-07-15",
-      "quantity": 1,
-      "remark": "",
-      "order_id": "雨润2026071502",
-      "created_at": "2026-07-16 08:19:50"
-    },
-    {
-      "id": 183,
-      "product_id": 10,
-      "warehouse": "翰溥仓",
-      "outbound_date": "2026-07-15",
-      "quantity": 8,
-      "remark": "",
-      "order_id": "雨润2026071502",
-      "created_at": "2026-07-16 08:19:52"
-    },
-    {
       "id": 184,
       "product_id": 9,
       "warehouse": "翰溥仓",
@@ -3461,24 +3431,6 @@
       "outbound_id": 180,
       "batch_id": 8,
       "quantity": 5
-    },
-    {
-      "id": 188,
-      "outbound_id": 181,
-      "batch_id": 13,
-      "quantity": 2
-    },
-    {
-      "id": 189,
-      "outbound_id": 182,
-      "batch_id": 14,
-      "quantity": 1
-    },
-    {
-      "id": 190,
-      "outbound_id": 183,
-      "batch_id": 19,
-      "quantity": 8
     },
     {
       "id": 191,
