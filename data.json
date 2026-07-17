@@ -362,7 +362,7 @@
       "batch_date": "2026-07-09",
       "production_date": "2026-07-06",
       "quantity": 120,
-      "remaining": 102.0,
+      "remaining": 100.0,
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-09 16:58:46"
@@ -3164,6 +3164,16 @@
       "remark": "",
       "order_id": "四季安2026071701",
       "created_at": "2026-07-17 09:38:23"
+    },
+    {
+      "id": 263,
+      "product_id": 6,
+      "warehouse": "翰溥仓",
+      "outbound_date": "2026-07-17",
+      "quantity": 2,
+      "remark": "",
+      "order_id": "四季安2026071701",
+      "created_at": "2026-07-17 09:38:25"
     }
   ],
   "outbound_details": [
@@ -4783,6 +4793,12 @@
       "outbound_id": 262,
       "batch_id": 14,
       "quantity": 1
+    },
+    {
+      "id": 274,
+      "outbound_id": 263,
+      "batch_id": 30,
+      "quantity": 2
     }
   ],
   "next_outbound_record_id": 85,
