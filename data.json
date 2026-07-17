@@ -570,6 +570,18 @@
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-16 19:04:14"
+    },
+    {
+      "id": 48,
+      "product_id": 1,
+      "warehouse": "翰溥仓",
+      "batch_date": "2026-07-17",
+      "production_date": "2026-05-08",
+      "quantity": 1,
+      "remaining": 1,
+      "batch_type": "transfer",
+      "remark": "调拨2026071701",
+      "created_at": "2026-07-17 09:37:02"
     }
   ],
   "outbound_records": [
