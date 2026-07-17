@@ -374,7 +374,7 @@
       "batch_date": "2026-07-09",
       "production_date": "2026-06-25",
       "quantity": 180,
-      "remaining": 39.0,
+      "remaining": 24.0,
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-09 16:58:46"
@@ -2602,6 +2602,16 @@
       "remark": "",
       "order_id": "专线2026071701",
       "created_at": "2026-07-17 08:49:30"
+    },
+    {
+      "id": 208,
+      "product_id": 9,
+      "warehouse": "翰溥仓",
+      "outbound_date": "2026-07-17",
+      "quantity": 15,
+      "remark": "",
+      "order_id": "专线2026071701",
+      "created_at": "2026-07-17 08:49:32"
     }
   ],
   "outbound_details": [
@@ -3879,6 +3889,12 @@
       "outbound_id": 207,
       "batch_id": 45,
       "quantity": 2
+    },
+    {
+      "id": 217,
+      "outbound_id": 208,
+      "batch_id": 31,
+      "quantity": 15
     }
   ],
   "next_outbound_record_id": 85,
