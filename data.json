@@ -180,7 +180,7 @@
       "product_id": 10,
       "batch_date": "2026-07-07",
       "quantity": 1000.0,
-      "remaining": 536.0,
+      "remaining": 510.0,
       "batch_type": "initial",
       "remark": "万纬仓初期库存",
       "created_at": "2026-07-08 16:07:19",
@@ -2872,6 +2872,16 @@
       "remark": "",
       "order_id": "安能2026071701",
       "created_at": "2026-07-17 09:01:38"
+    },
+    {
+      "id": 235,
+      "product_id": 10,
+      "warehouse": "万纬仓",
+      "outbound_date": "2026-07-17",
+      "quantity": 26,
+      "remark": "",
+      "order_id": "安能2026071701",
+      "created_at": "2026-07-17 09:01:40"
     }
   ],
   "outbound_details": [
@@ -4317,6 +4327,12 @@
       "outbound_id": 234,
       "batch_id": 34,
       "quantity": 19
+    },
+    {
+      "id": 245,
+      "outbound_id": 235,
+      "batch_id": 9,
+      "quantity": 26
     }
   ],
   "next_outbound_record_id": 85,
