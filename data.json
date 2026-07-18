@@ -594,6 +594,18 @@
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-18 13:37:53"
+    },
+    {
+      "id": 50,
+      "product_id": 4,
+      "warehouse": "万纬仓",
+      "batch_date": "2026-07-18",
+      "production_date": "2026-07-15",
+      "quantity": 150,
+      "remaining": 150,
+      "batch_type": "inbound",
+      "remark": "",
+      "created_at": "2026-07-18 13:37:55"
     }
   ],
   "outbound_records": [
