@@ -482,7 +482,7 @@
       "batch_date": "2026-07-14",
       "production_date": "2026-07-11",
       "quantity": 30,
-      "remaining": 30,
+      "remaining": 29,
       "batch_type": "transfer",
       "remark": "调拨2026071401",
       "created_at": "2026-07-14 08:56:11"
@@ -3608,6 +3608,16 @@
       "remark": "",
       "order_id": "调拨2026072101",
       "created_at": "2026-07-21 07:57:55"
+    },
+    {
+      "id": 299,
+      "product_id": 11,
+      "warehouse": "万纬仓",
+      "outbound_date": "2026-07-20",
+      "quantity": 1,
+      "remark": "",
+      "order_id": "城配2026072001",
+      "created_at": "2026-07-21 07:58:47"
     }
   ],
   "outbound_details": [
@@ -5442,6 +5452,12 @@
       "id": 309,
       "outbound_id": 298,
       "batch_id": 1,
+      "quantity": 1
+    },
+    {
+      "id": 310,
+      "outbound_id": 299,
+      "batch_id": 40,
       "quantity": 1
     }
   ],
