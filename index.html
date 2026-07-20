@@ -1080,7 +1080,7 @@ function showLockDetail(batchId){
   h+='<p style="font-size:12px;color:var(--text-lighter);margin-bottom:12px;line-height:1.5">确认货物质量合格后，点击解锁将此批次恢复为可用库存，参与正常出库FIFO计算。</p>';
   h+='<button class="btn btn-success btn-block" onclick="unlockBatch('+batchId+')">✓ 解锁恢复可用</button>';
   h+='</div>';
-  openModal(h,'锁库详情 — '+pname);
+  openModal('锁库详情 — '+pname, h);
 }
 function unlockBatch(batchId){
   const b=state.stock_batches.find(x=>x.id===batchId);
