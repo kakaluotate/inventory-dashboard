@@ -474,6 +474,10 @@ function toast(msg){
 
 // ====================== 页面切换 ======================
 function switchTab(tab){
+  if(IS_READONLY && (tab==='inbound'||tab==='outbound'||tab==='more')){
+    toast('只读版不能操作，如需入库/出库请联系管理员');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
