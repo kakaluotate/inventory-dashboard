@@ -1077,12 +1077,13 @@ function showLockDetail(batchId){
   h+='<div class="info-line"><span class="il-label">入库日期</span><span class="il-value">'+(b.batch_date||'未知')+'</span></div>';
   if(b.remark) h+='<div class="info-line"><span class="il-label">锁库原因</span><span class="il-value" style="color:#e67e22">'+esc(b.remark)+'</span></div>';
   h+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">';
-  h+='<p style="font-size:12px;color:var(--text-lighter);margin-bottom:12px;line-height:1.5">确认货物质量合格后，点击解锁将此批次恢复为可用库存，参与正常出库FIFO计算。</p>';
-  h+='<button class="btn btn-success btn-block" onclick="unlockBatch('+batchId+')">✓ 解锁恢复可用</button>';
+  h+='<p style="font-size:12px;color:var(--text-lighter);margin-bottom:12px;line-height:1.5">此货物因质量问题或其他原因暂不可用，不参与出库FIFO计算。如需解锁请联系管理员。</p>';
   h+='</div>';
   openModal('锁库详情 — '+pname, h);
 }
 function unlockBatch(batchId){
+  if(IS_READONLY){ toast("只读版不支持解锁操作"); return; }
+
   const b=state.stock_batches.find(x=>x.id===batchId);
   if(!b){ toast('未找到批次'); return; }
   b.batch_type='inbound';
