@@ -554,7 +554,7 @@
       "batch_date": "2026-07-16",
       "production_date": "2026-06-25",
       "quantity": 480,
-      "remaining": 321.0,
+      "remaining": 258.0,
       "batch_type": "inbound",
       "remark": "",
       "created_at": "2026-07-16 19:04:12"
@@ -4328,6 +4328,16 @@
       "remark": "",
       "order_id": "百世2026072101",
       "created_at": "2026-07-21 08:10:10"
+    },
+    {
+      "id": 371,
+      "product_id": 9,
+      "warehouse": "万纬仓",
+      "outbound_date": "2026-07-21",
+      "quantity": 63,
+      "remark": "",
+      "order_id": "百世2026072101",
+      "created_at": "2026-07-21 08:10:12"
     }
   ],
   "outbound_details": [
@@ -6619,6 +6629,12 @@
       "outbound_id": 370,
       "batch_id": 47,
       "quantity": 14
+    },
+    {
+      "id": 386,
+      "outbound_id": 371,
+      "batch_id": 46,
+      "quantity": 63
     }
   ],
   "next_outbound_record_id": 85,
